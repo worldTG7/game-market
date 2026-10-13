@@ -1610,6 +1610,7 @@ async function confirmDeleteItem(idx) {
 // DETAIL MODAL
 // ================================================================
 let currentMediaIndex=0, currentItem=null;
+let pendingLikes = 0; // 待同步的点赞数
 
 function openDetailById(id, fromUserPage = false) {
   const modalOverlay = document.getElementById('modalOverlay');
@@ -1843,6 +1844,8 @@ window.addEventListener('popstate', function(e) {
   const top = layerStack.length ? layerStack[layerStack.length - 1] : null;
   if (top === 'modal' && document.getElementById('modalOverlay').classList.contains('show')) {
     layerStack.pop();
+    // 退出前同步点赞数
+    syncLikes();
     // 直接内联关闭，不再调用 history.back()
     document.getElementById('modalOverlay').classList.remove('show');
     document.body.style.overflow = '';
@@ -1860,6 +1863,8 @@ window.addEventListener('popstate', function(e) {
   const userZ = userOverlay.classList.contains('show') ? parseInt(userOverlay.style.zIndex||'220') : 0;
   const modalZ = modalOverlay.classList.contains('show') ? parseInt(modalOverlay.style.zIndex||'210') : 0;
   if (modalZ >= userZ && modalZ > 0) {
+    // 退出前同步点赞数
+    syncLikes();
     document.getElementById('modalOverlay').classList.remove('show');
     document.body.style.overflow = '';
     const v = document.querySelector('.modal-media video'); if (v) v.pause();
@@ -1870,6 +1875,10 @@ window.addEventListener('popstate', function(e) {
 
 function closeModal(e){
   if(e&&e.target!==document.getElementById('modalOverlay'))return;
+
+  // 退出前同步点赞数
+  syncLikes();
+
   document.getElementById('modalOverlay').classList.remove('show');
   document.body.style.overflow='';
   const v=document.querySelector('.modal-media video');if(v)v.pause();
@@ -2092,33 +2101,54 @@ async function publishItem() {
   }
 }
 
-// Like item
-async function likeItem() {
+// Like item - 仅在本地累积，退出道具页时同步
+function likeItem() {
   if (!currentItem) return;
 
-  // 立即更新 UI（乐观更新）
+  // 本地累积
+  pendingLikes++;
   currentItem.likes = (currentItem.likes || 0) + 1;
+
+  // 立即更新 UI
   const likeCountEl = document.querySelector('.like-btn .like-count');
   if (likeCountEl) likeCountEl.textContent = currentItem.likes;
 
   // 更新本地数据
   const localItem = allItems.find(it => it.id === currentItem.id);
   if (localItem) localItem.likes = currentItem.likes;
+}
+
+// 同步点赞数到远程（退出道具页时调用）
+async function syncLikes() {
+  if (!currentItem || pendingLikes <= 0) {
+    pendingLikes = 0;
+    return;
+  }
+
+  const likesToSync = pendingLikes;
+  pendingLikes = 0;
 
   try {
     // 写入远程：更新道具 JSON 中的 likes 字段
     const ownerBranch = currentItem._owner;
-    if (!ownerBranch) { showToast('无法获取道具所有者信息','error'); return; }
+    if (!ownerBranch) return;
 
     await ghWriteFile(ownerBranch, 'data/'+currentItem.id+'.json', currentItem, '点赞: '+currentItem.title);
 
     // 异步更新主索引（不阻塞 UI）
     updateMainIndex().catch(e => console.warn('Index update failed:', e));
   } catch(e) {
-    // 回滚 UI
-    currentItem.likes = (currentItem.likes || 1) - 1;
+    // 回滚：将未同步的点赞数加回去
+    pendingLikes += likesToSync;
+    currentItem.likes = Math.max(0, (currentItem.likes || 0) - likesToSync);
+    const localItem = allItems.find(it => it.id === currentItem.id);
+    if (localItem) localItem.likes = currentItem.likes;
+
+    // 更新 UI
+    const likeCountEl = document.querySelector('.like-btn .like-count');
     if (likeCountEl) likeCountEl.textContent = currentItem.likes;
-    showToast('点赞失败: '+e.message,'error');
+
+    console.warn('Sync likes failed:', e.message);
   }
 }
 
