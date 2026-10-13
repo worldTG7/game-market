@@ -1888,6 +1888,10 @@ function viewUserPage(username, fromModal = false) {
   // 设置标志，防止后台渲染覆盖用户页
   isViewingUserPage = true;
 
+  // 重置用户页搜索/筛选状态（每次访问新用户时清空）
+  userPageSearchTerm = '';
+  userPageServerFilter = '';
+
   const overlay = document.getElementById('userPageOverlay');
   const header = document.getElementById('userPageHeader');
   const content = document.getElementById('userPageContent');
