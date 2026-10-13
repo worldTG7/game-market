@@ -1005,9 +1005,6 @@ function setCachedItems(items) {
 }
 
 async function loadAllItems() {
-  // Mark data as loaded immediately to prevent blocking render
-  isDataLoaded = true;
-
   // STEP 1: Show cached data immediately (instant)
   const cachedItems = getCachedItems();
   let showedCache = false;
@@ -1020,6 +1017,7 @@ async function loadAllItems() {
       allItems.push(...localOnly);
     }
     allItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
+    isDataLoaded = true;
     renderEveryonePanel();
     renderMinePanel();
     showedCache = true;
@@ -1086,6 +1084,9 @@ async function loadAllItems() {
       renderMinePanel();
       console.log('✅ 数据已更新，', allItems.length, '个道具（已过滤删除项）');
     }
+
+    // 确保标记数据已加载（即使数据没有变化）
+    isDataLoaded = true;
 
     // Update cache (only non-deleted items)
     setCachedItems(activeItems);
@@ -1185,8 +1186,9 @@ function renderEveryonePanel() {
 
   const c = document.getElementById('everyoneContent');
 
-  // 如果数据还没加载完成，保持加载状态
+  // 如果数据还没加载完成，显示加载状态
   if (!isDataLoaded) {
+    c.innerHTML = '<div class="panel-loading">加载中…</div>';
     return;
   }
 
@@ -1322,8 +1324,9 @@ function renderMinePanel() {
     return;
   }
 
-  // 如果数据还没加载完成，保持加载状态
+  // 如果数据还没加载完成，显示加载状态
   if (!isDataLoaded) {
+    c.innerHTML = '<div class="panel-loading">加载中…</div>';
     return;
   }
 
