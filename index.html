@@ -184,13 +184,16 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 @media(min-width:420px){.card-grid{grid-template-columns:repeat(3,1fr)}}
 
 /* ===== USER PAGE HEADER ===== */
-.user-page-header{background:linear-gradient(135deg,rgba(78,205,196,.12),rgba(255,107,53,.08));border:1px solid rgba(78,205,196,.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
-.user-page-back{width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.user-page-back:hover{border-color:var(--teal);color:var(--teal)}
-.user-page-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--accent));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1rem;flex-shrink:0}
-.user-page-info{flex:1;min-width:0}
-.user-page-name{font-size:.95rem;font-weight:700;color:var(--text)}
-.user-page-count{font-size:.72rem;color:var(--muted);margin-top:2px}
+.user-page-header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:var(--radius);padding:24px 20px;margin-bottom:16px;position:relative;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.user-page-header::before{content:'';position:absolute;top:-50%;right:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 70%);animation:pulse 8s ease-in-out infinite}
+.user-page-back{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .3s}
+.user-page-back:hover{background:rgba(255,255,255,.3);transform:scale(1.05)}
+.user-page-avatar{width:64px;height:64px;border-radius:50%;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:#667eea;font-weight:700;font-size:1.6rem;flex-shrink:0;position:relative;z-index:1}
+.user-page-info{flex:1;min-width:0;position:relative;z-index:1}
+.user-page-name{font-size:1.3rem;font-weight:700;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,.2);margin-bottom:4px}
+.user-page-count{font-size:.85rem;color:rgba(255,255,255,.9);display:flex;align-items:center;gap:6px}
+.user-page-count::before{content:'📦';font-size:1rem}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.1);opacity:.8}}
 .card-time{font-size:.62rem;color:var(--muted);margin-top:4px}
 .tag.user{cursor:pointer;transition:all .2s}
 .tag.user:hover{background:rgba(78,205,196,.25);border-color:var(--teal)}
@@ -1139,35 +1142,69 @@ async function publishItem() {
         const ext = m.name.split('.').pop().toLowerCase();
         const filename = `${itemId}_${i}.${ext}`;
 
-        // Update progress
-        const progress = Math.round(((i + 0.5) / totalFiles) * 100);
-        progressText.textContent = `正在上传 ${i + 1}/${totalFiles}: ${m.name}`;
-        progressFill.style.width = progress + '%';
-
-        // Convert file to base64
-        const base64 = await fileToBase64(m.file);
-        // Remove data URL prefix (data:image/jpeg;base64,)
-        const base64Content = base64.split(',')[1];
-
-        await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传媒体: '+filename);
-
-        // For videos, generate thumbnail
+        let compressedUrl = null;
         let thumbnail = null;
+
+        if (m.type === 'image') {
+          // Step 1: Compress image
+          progressText.textContent = `正在压缩图片 ${i + 1}/${totalFiles}: ${m.name}`;
+          progressFill.style.width = Math.round(((i + 0.1) / totalFiles) * 100) + '%';
+          try {
+            const compressedBlob = await compressImage(m.file);
+            const compressedFilename = `${itemId}_${i}_compressed.jpg`;
+
+            // Step 2: Upload compressed version
+            progressText.textContent = `正在上传压缩图 ${i + 1}/${totalFiles}: ${m.name}`;
+            progressFill.style.width = Math.round(((i + 0.3) / totalFiles) * 100) + '%';
+            const compressedBase64 = await fileToBase64(compressedBlob);
+            const compressedBase64Content = compressedBase64.split(',')[1];
+            await ghWriteBinaryFile(branch, 'media/'+compressedFilename, compressedBase64Content, '上传压缩图: '+compressedFilename);
+            compressedUrl = getMediaUrl(branch, compressedFilename);
+          } catch(e) {
+            console.warn('Image compression failed, using original:', e);
+          }
+
+          // Upload original (backup, no progress text shown)
+          const base64 = await fileToBase64(m.file);
+          const base64Content = base64.split(',')[1];
+          await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传原图: '+filename);
+          progressFill.style.width = Math.round(((i + 0.9) / totalFiles) * 100) + '%';
+        }
+
         if (m.type === 'video') {
-          progressText.textContent = `正在生成封面: ${m.name}`;
+          // Step 1: Generate thumbnail
+          progressText.textContent = `正在生成封面 ${i + 1}/${totalFiles}: ${m.name}`;
+          progressFill.style.width = Math.round(((i + 0.1) / totalFiles) * 100) + '%';
           thumbnail = await generateVideoThumbnail(m.preview);
           if (thumbnail) {
             const thumbFilename = `${itemId}_${i}_thumb.jpg`;
+
+            // Step 2: Upload thumbnail
+            progressText.textContent = `正在上传封面 ${i + 1}/${totalFiles}: ${m.name}`;
+            progressFill.style.width = Math.round(((i + 0.3) / totalFiles) * 100) + '%';
             const thumbBase64 = thumbnail.split(',')[1];
             await ghWriteBinaryFile(branch, 'media/'+thumbFilename, thumbBase64, '上传封面: '+thumbFilename);
             thumbnail = getMediaUrl(branch, thumbFilename);
+            compressedUrl = thumbnail;
           }
+
+          // Step 3: Upload original video
+          progressText.textContent = `正在上传视频 ${i + 1}/${totalFiles}: ${m.name}`;
+          progressFill.style.width = Math.round(((i + 0.5) / totalFiles) * 100) + '%';
+          const base64 = await fileToBase64(m.file);
+          const base64Content = base64.split(',')[1];
+
+          progressText.textContent = `正在保存视频 ${i + 1}/${totalFiles}: ${m.name}`;
+          progressFill.style.width = Math.round(((i + 0.7) / totalFiles) * 100) + '%';
+          await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传视频: '+filename);
+          progressFill.style.width = Math.round(((i + 0.9) / totalFiles) * 100) + '%';
         }
 
         mediaRefs.push({
           type: m.type,
           filename: filename,
-          url: getMediaUrl(branch, filename),
+          url: compressedUrl || getMediaUrl(branch, filename),
+          originalUrl: getMediaUrl(branch, filename),
           thumbnail: thumbnail
         });
 
@@ -1267,6 +1304,52 @@ function generateVideoThumbnail(videoUrl) {
     });
 
     video.src = videoUrl;
+  });
+}
+
+// Compress image using Canvas
+function compressImage(file, maxWidth = 1200, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+
+      // Calculate new dimensions
+      let width = img.width;
+      let height = img.height;
+      if (width > maxWidth) {
+        height = Math.round(height * maxWidth / width);
+        width = maxWidth;
+      }
+
+      // Create canvas and compress
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('压缩失败'));
+          }
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('图片加载失败'));
+    };
+
+    img.src = url;
   });
 }
 
