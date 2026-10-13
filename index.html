@@ -187,11 +187,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 @media(min-width:420px){.card-grid{grid-template-columns:repeat(3,1fr)}}
 
 /* ===== USER PAGE HEADER ===== */
-.user-page-header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 16px;margin-bottom:24px;display:flex;align-items:center;gap:12px}
-.user-page-back{width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.user-page-info{flex:1;min-width:0}
+.user-page-header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 16px;margin-bottom:32px;display:flex;align-items:center;gap:16px}
+.user-page-back{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.user-page-back:hover{background:var(--border);transform:scale(1.05)}
+.user-page-info{flex:1;min-width:0;display:flex;align-items:baseline;gap:8px}
 .user-page-name{font-size:1.1rem;font-weight:700;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.4}
-.user-page-count{font-size:.75rem;color:var(--muted);margin-top:4px}
+.user-page-count{font-size:.75rem;color:var(--muted);margin-top:0}
 @keyframes pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.1);opacity:.8}}
 .card-time{font-size:.62rem;color:var(--muted);margin-top:4px}
 .tag.user{cursor:pointer;transition:all .2s}
