@@ -83,6 +83,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-meta-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.72rem;color:var(--text2)}
 .card-meta-owner{color:var(--teal);font-weight:500}
 .card-meta-server{color:#fff;font-weight:500}
+.card-server-row{font-size:.8rem;color:var(--teal);margin-top:4px;display:flex;align-items:center;gap:4px}
 .card-meta-time{color:var(--text2)}
 
 /* ===== SEARCH BOX ===== */
@@ -1572,9 +1573,9 @@ function renderCardGrid(items, gridId, opts = {}) {
         </div>
         <div class="card-meta-row">
           ${it._owner && !opts.hideOwner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
-          ${it.server?`<span class="card-meta-server">🖥️ ${esc(it.server)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
+        ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
       </div>
     </div>`;
   });
@@ -1679,9 +1680,9 @@ function loadMoreItems() {
         </div>
         <div class="card-meta-row">
           ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
-          ${it.server?`<span class="card-meta-server">🖥️ ${esc(it.server)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
+        ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
       </div>
     </div>`;
   });
@@ -1775,9 +1776,9 @@ function renderMinePanel() {
           </div>
           <div class="card-meta-row">
             ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
-            ${it.server?`<span class="card-meta-server">🖥️ ${esc(it.server)}</span>`:''}
             ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
           </div>
+          ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
         </div>
       </div>`;
     });
@@ -1820,9 +1821,9 @@ function renderMinePanel() {
               </div>
               <div class="card-meta-row">
                 ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
-                ${it.server?`<span class="card-meta-server">🖥️ ${esc(it.server)}</span>`:''}
                 ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
               </div>
+              ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
             </div>
           </div>`;
         });
@@ -1921,9 +1922,9 @@ function viewUserPage(username, fromModal = false) {
           </div>
           <div class="card-meta-row">
             ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
-            ${it.server?`<span class="card-meta-server">🖥️ ${esc(it.server)}</span>`:''}
             ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
           </div>
+          ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
         </div>
       </div>`;
     });
@@ -1963,9 +1964,9 @@ function viewUserPage(username, fromModal = false) {
               </div>
               <div class="card-meta-row">
                 ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
-                ${it.server?`<span class="card-meta-server">🖥️ ${esc(it.server)}</span>`:''}
                 ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
               </div>
+              ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
             </div>
           </div>`;
         });
@@ -3158,6 +3159,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-meta-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.72rem;color:var(--text2)}
 .card-meta-owner{color:var(--teal);font-weight:500}
 .card-meta-server{color:#fff;font-weight:500}
+.card-server-row{font-size:.8rem;color:var(--teal);margin-top:4px;display:flex;align-items:center;gap:4px}
 .card-meta-time{color:var(--text2)}
 @media(min-width:420px){.card-grid{grid-template-columns:repeat(3,1fr)}}
 </style>
