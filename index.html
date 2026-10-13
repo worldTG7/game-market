@@ -1586,7 +1586,8 @@ function openDetailById(id) {
   const closeBtn = '<button class="modal-close" onclick="closeModal()">✕</button>';
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
-    const userClickHandler = (currentItem._owner && !isViewingUserPage) ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)"` : '';
+    const isUserPageVisible = document.getElementById('userPageOverlay').classList.contains('show');
+    const userClickHandler = (currentItem._owner && !isUserPageVisible) ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)"` : '';
     userBar.innerHTML = `
       <div class="user-info" ${userClickHandler}>
         ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
