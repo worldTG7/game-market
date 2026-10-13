@@ -2116,7 +2116,10 @@ async function publishItem() {
   }
 }
 
-// Like item - 仅在本地累积，退出道具页时同步到远程
+// 防抖定时器
+let syncTimer = null;
+
+// Like item - 立即更新本地 + 防抖同步远端
 function likeItem() {
   if (!currentItem) return;
 
@@ -2132,7 +2135,7 @@ function likeItem() {
   const localItem = allItems.find(it => it.id === currentItem.id);
   if (localItem) localItem.likes = currentItem.likes;
 
-  // 立即更新 localStorage 缓存，确保刷新后数据最新
+  // 立即更新 localStorage 缓存
   try {
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
@@ -2144,9 +2147,13 @@ function likeItem() {
       }
     }
   } catch(e) { /* ignore cache errors */ }
+
+  // 防抖：2秒后同步到远端（快速点击只触发一次）
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncLikes, 2000);
 }
 
-// 同步点赞数到远程（退出道具页时调用）
+// 同步点赞数到远程
 async function syncLikes() {
   if (!currentItem || pendingLikes <= 0) {
     pendingLikes = 0;
@@ -2157,41 +2164,16 @@ async function syncLikes() {
   pendingLikes = 0;
 
   try {
-    // 写入远程：更新道具 JSON 中的 likes 字段
     const ownerBranch = currentItem._owner;
     if (!ownerBranch) return;
 
     await ghWriteFile(ownerBranch, 'data/'+currentItem.id+'.json', currentItem, '点赞: '+currentItem.title);
+    console.log('✅ 点赞已同步到远端');
 
-    // 更新本地缓存中的 likes 值
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      try {
-        const cacheData = JSON.parse(cached);
-        const cachedItem = cacheData.items.find(it => it.id === currentItem.id);
-        if (cachedItem) {
-          cachedItem.likes = currentItem.likes;
-          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-          console.log('✅ 本地缓存已更新');
-        }
-      } catch(e) {
-        console.warn('更新缓存失败:', e);
-      }
-    }
-
-    // 异步更新主索引（不阻塞 UI）
+    // 异步更新主索引
     updateMainIndex().catch(e => console.warn('Index update failed:', e));
   } catch(e) {
-    // 回滚：将未同步的点赞数加回去
-    pendingLikes += likesToSync;
-    currentItem.likes = Math.max(0, (currentItem.likes || 0) - likesToSync);
-    const localItem = allItems.find(it => it.id === currentItem.id);
-    if (localItem) localItem.likes = currentItem.likes;
-
-    // 更新 UI
-    const likeCountEl = document.querySelector('.like-btn .like-count');
-    if (likeCountEl) likeCountEl.textContent = currentItem.likes;
-
+    // 失败时不减少本地值，避免用户困惑
     console.warn('Sync likes failed:', e.message);
   }
 }
