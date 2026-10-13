@@ -1326,10 +1326,10 @@ async function deleteMyItem(itemId) {
 // VIEW USER PAGE (查看某个用户的主页)
 // ================================================================
 function viewUserPage(username, fromModal = false) {
-  // 保存返回上下文
+  // 保存返回上下文（从详情页进入时记住之前的道具）
   if (fromModal && currentItem) {
     userPageReturnContext = { type: 'modal', itemId: currentItem.id };
-    closeModal();
+    // 不关闭详情，让用户页叠加在上面，返回时无闪烁
   } else {
     userPageReturnContext = null;
   }
@@ -1391,7 +1391,6 @@ function closeUserPage(fromPopstate = false) {
   // 重置用户页标志，恢复正常渲染
   isViewingUserPage = false;
   document.getElementById('userPageOverlay').classList.remove('show');
-  document.body.style.overflow = '';
 
   // 如果是点击 ✕ 关闭，需要回退 history
   if (!fromPopstate && _userPagePushed) {
@@ -1401,12 +1400,13 @@ function closeUserPage(fromPopstate = false) {
 
   // 恢复之前的上下文
   if (userPageReturnContext && userPageReturnContext.type === 'modal') {
-    const itemId = userPageReturnContext.itemId;
+    // 从详情页进入时，详情从未被关闭（只是被用户页遮挡）
+    // 移除用户页后详情自然显现，无需重新打开，零闪烁
     userPageReturnContext = null;
-    // 使用 setTimeout 确保用户页完全关闭后再打开道具详情
-    setTimeout(() => openDetailById(itemId), 100);
+    document.body.style.overflow = 'hidden';
   } else {
     userPageReturnContext = null;
+    document.body.style.overflow = '';
     renderEveryonePanel();
   }
 }
@@ -2251,6 +2251,9 @@ render();
 // INIT
 // ================================================================
 (async function init() {
+  // 推入哨兵状态，防止微信左滑直接退出
+  history.pushState({sentinel:true}, '');
+
   // Check URL parameters for initial view
   const urlParams = new URLSearchParams(window.location.search);
   const itemParam = urlParams.get('item');
