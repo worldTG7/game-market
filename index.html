@@ -444,7 +444,7 @@ function renderMyItemThumb(item) {
 // GITHUB API
 // ================================================================
 async function ghFetch(path, opts={}) {
-  const res = await fetch(GH.api+path, { ...opts, headers: { ...GH.headers, ...(opts.headers||{}) } });
+  const res = await fetch(GH.api+path, { ...opts, cache: 'no-cache', headers: { ...GH.headers, ...(opts.headers||{}) } });
   if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e.message||`HTTP ${res.status}`); }
   return res;
 }
