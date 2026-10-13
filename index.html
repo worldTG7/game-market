@@ -1080,11 +1080,13 @@ async function loadAllItems() {
 
     if (newHash !== oldHash || !showedCache) {
       allItems = activeItems;
-      isDataLoaded = true;
       renderEveryonePanel();
       renderMinePanel();
       console.log('✅ 数据已更新，', allItems.length, '个道具（已过滤删除项）');
     }
+
+    // Always mark data as loaded after API completes
+    isDataLoaded = true;
 
     // Update cache (only non-deleted items)
     setCachedItems(activeItems);
