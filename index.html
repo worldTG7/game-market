@@ -956,6 +956,7 @@ function setCachedItems(items) {
 async function loadAllItems() {
   // STEP 1: Show cached data immediately (instant)
   const cachedItems = getCachedItems();
+  let showedCache = false;
   if (cachedItems && cachedItems.length > 0) {
     allItems = cachedItems;
     // Merge with local myItems
@@ -967,6 +968,7 @@ async function loadAllItems() {
     allItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
     renderEveryonePanel();
     renderMinePanel();
+    showedCache = true;
     console.log('✅ 显示缓存数据，', allItems.length, '个道具');
   } else {
     // No cache, show loading state
@@ -1010,11 +1012,11 @@ async function loadAllItems() {
 
     remoteItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
 
-    // Only update if data changed
+    // Only update if data changed OR we showed loading skeleton (need to replace it)
     const newHash = JSON.stringify(remoteItems.map(it => it.id + ':' + it.time));
     const oldHash = JSON.stringify(allItems.map(it => it.id + ':' + it.time));
 
-    if (newHash !== oldHash) {
+    if (newHash !== oldHash || !showedCache) {
       allItems = remoteItems;
       renderEveryonePanel();
       renderMinePanel();
