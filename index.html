@@ -46,6 +46,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .header-share-btn:hover{background:var(--teal);color:#fff}
 .logout-btn{padding:7px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.72rem;font-family:var(--font-body);cursor:pointer;transition:all .2s}
 .logout-btn:hover{border-color:var(--danger);color:var(--danger)}
+.refresh-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:.9rem;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.refresh-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(255,107,53,.1)}
+.refresh-btn:active{transform:scale(.9)}
+.refresh-btn.spinning svg{animation:spin .8s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 /* ===== TABS ===== */
 .tab-bar{position:fixed;bottom:0;left:0;right:0;z-index:100;display:flex;background:rgba(15,17,23,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border);padding:6px 0 env(safe-area-inset-bottom,8px)}
@@ -929,11 +934,49 @@ function updateHeader() {
   const r = document.getElementById('headerRight');
   const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab;
   const showShare = activeTab === 'mine' && currentUser;
+  const refreshBtn = `<button class="refresh-btn" id="refreshBtn" onclick="refreshAll()" title="刷新"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>`;
 
   if (currentUser) {
-    r.innerHTML = `${showShare ? '<button class="header-share-btn" onclick="shareMainPage()">分享</button>' : ''}<span class="user-chip">👤 ${esc(currentUser.username)}</span><button class="logout-btn" onclick="doLogout()">退出</button>`;
+    r.innerHTML = `${refreshBtn}${showShare ? '<button class="header-share-btn" onclick="shareMainPage()">分享</button>' : ''}<span class="user-chip">👤 ${esc(currentUser.username)}</span><button class="logout-btn" onclick="doLogout()">退出</button>`;
   } else {
-    r.innerHTML = `<button class="auth-btn" onclick="openLogin()">登录 / 注册</button>`;
+    r.innerHTML = `${refreshBtn}<button class="auth-btn" onclick="openLogin()">登录 / 注册</button>`;
+  }
+}
+
+async function refreshAll() {
+  const btn = document.getElementById('refreshBtn');
+  if (btn) btn.classList.add('spinning');
+  showToast('正在刷新...', 'info');
+
+  try {
+    // Clear caches
+    everyoneSearchTerm = '';
+    everyoneServerFilter = '';
+    mineSearchTerm = '';
+    mineServerFilter = '';
+    userPageSearchTerm = '';
+    userPageServerFilter = '';
+    everyonePage = 0;
+    allItems = [];
+    myItems = [];
+    isDataLoaded = false;
+
+    // Reload data
+    await loadAllItems();
+
+    // Re-render current panel
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab;
+    if (activeTab === 'everyone') {
+      renderEveryonePanel();
+    } else if (activeTab === 'mine') {
+      renderMinePanel();
+    }
+
+    showToast('刷新完成', 'success');
+  } catch (e) {
+    showToast('刷新失败: ' + e.message, 'error');
+  } finally {
+    if (btn) btn.classList.remove('spinning');
   }
 }
 
