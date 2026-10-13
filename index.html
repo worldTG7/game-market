@@ -1074,6 +1074,9 @@ async function loadAllItems() {
     // Filter out deleted items before caching and display
     const activeItems = remoteItems.filter(it => !it._deleted);
 
+    // Mark data as loaded BEFORE render check, so render functions won't show loading
+    isDataLoaded = true;
+
     // Only update if data changed OR we showed loading skeleton (need to replace it)
     const newHash = JSON.stringify(activeItems.map(it => it.id + ':' + it.time));
     const oldHash = JSON.stringify(allItems.map(it => it.id + ':' + it.time));
@@ -1084,9 +1087,6 @@ async function loadAllItems() {
       renderMinePanel();
       console.log('✅ 数据已更新，', allItems.length, '个道具（已过滤删除项）');
     }
-
-    // 确保标记数据已加载（即使数据没有变化）
-    isDataLoaded = true;
 
     // Update cache (only non-deleted items)
     setCachedItems(activeItems);
