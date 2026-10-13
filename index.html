@@ -37,7 +37,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .user-chip{font-size:.72rem;padding:5px 12px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .auth-btn{padding:7px 16px;border-radius:20px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:.75rem;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:all .2s;white-space:nowrap}
 .auth-btn:hover{background:var(--accent);color:#fff}
-.share-header-btn{padding:5px 12px;border-radius:16px;border:1.5px solid var(--teal);background:rgba(78,205,196,.12);color:var(--teal);font-size:.72rem;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:all .2s;white-space:nowrap;box-shadow:none;flex-shrink:0;margin-right:8px}
+.share-header-btn{padding:8px 16px;border-radius:20px;border:1.5px solid var(--teal);background:rgba(78,205,196,.12);color:var(--teal);font-size:.82rem;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:all .2s;white-space:nowrap;box-shadow:0 2px 8px rgba(78,205,196,.15);flex-shrink:0}
 .share-header-btn:hover{background:var(--teal);color:#fff;box-shadow:0 2px 8px rgba(78,205,196,.2)}
 .share-header-btn:active{box-shadow:0 1px 3px rgba(78,205,196,.15)}
 .share-header-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;margin-right:5px;vertical-align:-3px}
@@ -386,7 +386,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
 <!-- USER PAGE OVERLAY -->
 <div class="user-page-overlay" id="userPageOverlay">
-  <div class="detail-header" id="userPageHeader"></div>
+  <div class="user-page-header" id="userPageHeader"></div>
   <div class="user-page-content" id="userPageContent"></div>
 </div>
 
@@ -1449,7 +1449,7 @@ function viewUserPage(username, fromModal = false) {
     </div>
     <div class="actions">
       <button class="share-header-btn" onclick="event.stopPropagation();shareUserPage('${escJs(username)}')"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享主页</button>
-      <button class="modal-close" onclick="closeUserPage()">✕</button>
+      <button class="user-page-close" onclick="closeUserPage()">✕</button>
     </div>`;
 
   if (!userItems.length) {
