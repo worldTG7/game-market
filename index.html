@@ -123,11 +123,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
 /* 飘散的爱心粒子 */
 .like-particle{
-  position:absolute;
-  font-size:1rem;
+  position:fixed;
+  font-size:1.2rem;
   pointer-events:none;
   animation: particleFloat 1s ease-out forwards;
-  z-index:10;
+  z-index:9999;
 }
 @keyframes particleFloat{
   0%{
