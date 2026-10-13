@@ -95,7 +95,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-thumb-wrapper{position:relative;width:100%;aspect-ratio:4/3}
 
 /* ===== DETAIL MODAL ===== */
-.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-overlay{position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.85);display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .modal-overlay.show{display:block}
 .modal{width:100%;min-height:100dvh;max-width:100%;background:var(--bg);animation:slideUp .25s ease;display:flex;flex-direction:column;position:relative}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -1584,7 +1584,7 @@ function openDetailById(id) {
   const closeBtn = '<button class="modal-close" onclick="closeModal()">✕</button>';
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
-    const userClickHandler = currentItem._owner ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)"` : '';
+    const userClickHandler = (currentItem._owner && !isViewingUserPage) ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)"` : '';
     userBar.innerHTML = `
       <div class="user-info" ${userClickHandler}>
         ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
