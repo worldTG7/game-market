@@ -250,6 +250,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <div id="uploadContent" style="display:none">
       <div class="form-section"><label class="form-label"><span class="req">*</span> 道具介绍</label><input class="form-input" id="fTitle" placeholder="输入介绍" maxlength="100"></div>
       <div class="form-section"><label class="form-label"><span class="req">*</span> 价格（元）</label><input class="form-input" id="fPrice" type="number" min="0" step="1" placeholder="输入价格"></div>
+      <div class="form-section"><label class="form-label">微信号</label><input class="form-input" id="fWechat" placeholder="选填，方便买家联系" maxlength="50"></div>
       <div class="form-section">
         <label class="form-label">图片 / 视频</label>
         <div class="upload-zone" id="uploadZone">
@@ -1487,7 +1488,7 @@ function openDetailById(id) {
   document.getElementById('modalInfo').innerHTML = `
     <div class="modal-title">${esc(currentItem.title)}</div>
     <div class="modal-price">${currentItem.price}</div>
-    ${currentItem.time ? `<div class="post-time" style="font-size:.75rem;color:var(--text2);margin-bottom:12px">${formatTime(currentItem.time)}</div>` : ''}
+    ${currentItem.time ? `<div class="post-time" style="font-size:.75rem;color:var(--text2);margin-bottom:12px">${formatTime(currentItem.time)}${currentItem.wechat ? ` · 微信：${esc(currentItem.wechat)}` : ''}</div>` : ''}
     <div class="modal-meta">
       ${currentItem.category?`<span class="meta-chip">${esc(currentItem.category)}</span>`:''}
       ${currentItem.game?`<span class="meta-chip">🎮 ${esc(currentItem.game)}</span>`:''}
@@ -1794,10 +1795,12 @@ async function publishItem() {
   }
 
   // Create item with media references (not base64 data)
+  const wechat = document.getElementById('fWechat').value.trim() || '无';
   const item = {
     id: itemId,
     title,
     price,
+    wechat,
     category:'',
     game:'',
     desc:title,
@@ -2045,6 +2048,7 @@ function generateBlurPlaceholder(file) {
 function resetForm(){
   document.getElementById('fTitle').value='';
   document.getElementById('fPrice').value='';
+  document.getElementById('fWechat').value='';
   uploadedMedia=[];
   renderUploadPreviews();
 }
