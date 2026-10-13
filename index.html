@@ -777,7 +777,7 @@ function updateHeader() {
   const showShare = activeTab === 'mine' && currentUser;
 
   if (currentUser) {
-    r.innerHTML = `<span class="user-chip">👤 ${esc(currentUser.username)}</span>${showShare ? '<button class="header-share-btn" onclick="shareMainPage()">分享</button>' : ''}<button class="logout-btn" onclick="doLogout()">退出</button>`;
+    r.innerHTML = `${showShare ? '<button class="header-share-btn" onclick="shareMainPage()">分享</button>' : ''}<span class="user-chip">👤 ${esc(currentUser.username)}</span><button class="logout-btn" onclick="doLogout()">退出</button>`;
   } else {
     r.innerHTML = `<button class="auth-btn" onclick="openLogin()">登录 / 注册</button>`;
   }
