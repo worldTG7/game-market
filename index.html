@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<html lang="zh-CN"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>世界online</title>
@@ -8,7 +6,7 @@
 <meta property="og:title" content="🎮 世界online">
 <meta property="og:description" content="游戏账号与道具，点击查看详情">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;800&amp;display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:#0f1117;--surface:#1a1d28;--surface2:#232736;
@@ -206,40 +204,62 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <header class="header">
     <div class="header-left">
       <h1>世界online</h1>
-      <div class="header-sub" id="headerSub"></div>
+      <div class="header-sub" id="headerSub">我的道具</div>
     </div>
-    <div class="header-right" id="headerRight">
-      <button class="auth-btn" id="authBtnHeader" onclick="openLogin()">登录 / 注册</button>
-    </div>
+    <div class="header-right" id="headerRight"><span class="user-chip">👤 test</span><button class="logout-btn" onclick="doLogout()">退出</button></div>
   </header>
 
   <!-- 看大家 -->
-  <section class="panel active" id="panelEveryone">
+  <section class="panel" id="panelEveryone">
     <div id="userPageHeader" style="display:none"></div>
-    <div id="everyoneContent"><div class="empty-state"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 00-8 0v2"/></svg><p>暂无道具上架<br>点击右上角「登录/注册」发布你的道具</p></div></div>
+    <div id="everyoneContent"><div class="card-grid"><div class="card" onclick="openDetailById('item_1791858351058')">
+      <img class="card-thumb" src="https://raw.githubusercontent.com/worldTG7/game-market/test/media/item_1791858351058_0.png" loading="lazy">
+      <div class="card-body">
+        <div class="card-title">123</div>
+        <div class="card-price">123</div>
+        <div class="card-tags">
+          
+          
+          <span class="tag user" onclick="event.stopPropagation();viewUserPage('test')">test</span>
+        </div>
+        <div class="card-time">2026-10-13 10:25</div>
+      </div>
+    </div></div></div>
   </section>
 
   <!-- 我的 -->
-  <section class="panel" id="panelMine"><div id="mineContent"><div class="empty-state"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><p>请先登录查看你的道具</p></div></div></section>
+  <section class="panel active" id="panelMine"><div id="mineContent"><div style="display:flex;justify-content:flex-end;padding:12px 16px 0"><button class="share-header-btn" onclick="openDeployModal('user',toBranchName(currentUser.username))"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>分享主页</button></div><div class="card-grid"><div class="card" onclick="openDetailById('item_1791858351058')">
+      <button class="card-delete" onclick="event.stopPropagation();deleteMyItem('item_1791858351058')" title="删除">×</button>
+      <img class="card-thumb" src="https://raw.githubusercontent.com/worldTG7/game-market/test/media/item_1791858351058_0.png" loading="lazy">
+      <div class="card-body">
+        <div class="card-title">123</div>
+        <div class="card-price">123</div>
+        <div class="card-tags">
+          
+          
+        </div>
+        <div class="card-time">2026-10-13 10:25</div>
+      </div>
+    </div></div></div></section>
 
   <!-- 上传 -->
   <section class="panel" id="panelUpload">
-    <div id="uploadGuestPrompt" style="display:none">
+    <div id="uploadGuestPrompt" style="display: none;">
       <div class="empty-state">
-        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
         <p>请先登录或注册<br>才能发布道具和生成分享链接</p>
         <button class="btn btn-primary" style="margin-top:20px;flex:none;padding:12px 32px" onclick="openLogin()">立即登录</button>
       </div>
     </div>
-    <div id="uploadContent" style="display:none">
+    <div id="uploadContent" style="display: block;">
       <div class="form-section"><label class="form-label"><span class="req">*</span> 道具介绍</label><input class="form-input" id="fTitle" placeholder="输入介绍" maxlength="100"></div>
       <div class="form-section"><label class="form-label"><span class="req">*</span> 价格（元）</label><input class="form-input" id="fPrice" type="number" min="0" step="1" placeholder="输入价格"></div>
       <div class="form-section">
         <label class="form-label">图片 / 视频</label>
         <div class="upload-zone" id="uploadZone">
-          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
           <p>点击或拖拽上传图片/视频<br><span style="font-size:.7rem">支持 JPG PNG MP4，单文件 ≤ 50MB</span></p>
-          <input type="file" id="fileInput" multiple accept="image/*,video/mp4,video/quicktime">
+          <input type="file" id="fileInput" multiple="" accept="image/*,video/mp4,video/quicktime">
         </div>
         <div class="upload-progress" id="uploadProgress">
           <div class="upload-progress-text" id="uploadProgressText">准备上传...</div>
@@ -253,22 +273,26 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       </div>
 
       <!-- My items list -->
-      <div class="my-items" id="myItemsList"></div>
+      <div class="my-items" id="myItemsList"><div style="font-size:.78rem;font-weight:600;color:var(--text2);margin-bottom:10px">📦 我已发布的道具</div><div class="my-item-row">
+      <img class="my-item-thumb" src="https://raw.githubusercontent.com/worldTG7/game-market/test/media/item_1791858351058_0.png">
+      <div class="my-item-info"><div class="my-item-title">123</div><div class="my-item-price">¥123</div></div>
+      <button class="my-item-del" onclick="confirmDeleteItem(0)">删除</button>
+    </div></div>
     </div>
   </section>
 
   <!-- TAB BAR -->
   <nav class="tab-bar">
-    <button class="tab-btn active" data-tab="everyone" onclick="switchTab('everyone')">
-      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+    <button class="tab-btn" data-tab="everyone" onclick="switchTab('everyone')">
+      <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 00-3-3.87"></path><path d="M16 3.13a4 4 0 010 7.75"></path></svg>
       <span>看大家</span>
     </button>
-    <button class="tab-btn" data-tab="mine" onclick="switchTab('mine')">
-      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <button class="tab-btn active" data-tab="mine" onclick="switchTab('mine')">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       <span>我的</span>
     </button>
     <button class="tab-btn" data-tab="upload" onclick="switchTab('upload')">
-      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
       <span>上传</span>
     </button>
   </nav>
@@ -315,29 +339,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <div class="toast" id="toast"></div>
 
 <!-- DEPLOY MODAL -->
-<div class="deploy-modal-overlay" id="deployModalOverlay" onclick="closeDeployModal(event)">
-  <div class="deploy-modal" onclick="event.stopPropagation()">
-    <button class="deploy-modal-close" onclick="closeDeployModal()">✕</button>
-    <h2>生成分享链接</h2>
-    <div class="deploy-progress" id="deployProgress">
-      <div class="deploy-step" id="step1"><span class="icon">1</span>收集道具数据...</div>
-      <div class="deploy-step" id="step2"><span class="icon">2</span>检查仓库...</div>
-      <div class="deploy-step" id="step3"><span class="icon">3</span>上传页面文件...</div>
-      <div class="deploy-step" id="step4"><span class="icon">4</span>启用 Pages...</div>
-      <div class="deploy-step" id="step5"><span class="icon">5</span>复制链接...</div>
-    </div>
-    <div class="deploy-result" id="deployResult" style="display:none">
-      <div style="font-size:1.5rem;margin-bottom:8px">🎉</div>
-      <div style="font-size:.95rem;font-weight:700;margin-bottom:4px">分享链接已生成</div>
-      <div style="font-size:.75rem;color:var(--muted);margin-bottom:12px">复制链接粘贴到微信群即可分享</div>
-      <div class="deploy-result-url" id="deployUrl"></div>
-      <button class="copy-btn" id="copyBtn" onclick="copyShareUrl()">
-        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-        <span id="copyBtnText">复制链接</span>
-      </button>
-    </div>
-  </div>
-</div>
+
 
 <script>
 // ================================================================
@@ -1584,5 +1586,6 @@ render();
   }
 })();
 </script>
-</body>
-</html>
+
+
+</body></html>
