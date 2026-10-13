@@ -1388,6 +1388,9 @@ function viewUserPage(username, fromModal = false) {
 }
 
 function closeUserPage(fromPopstate = false) {
+  // 标记这是从用户页返回的过渡，防止 popstate 监听器关闭详情页
+  _returningFromUserPage = true;
+
   // 重置用户页标志，恢复正常渲染
   isViewingUserPage = false;
   document.getElementById('userPageOverlay').classList.remove('show');
@@ -1409,6 +1412,9 @@ function closeUserPage(fromPopstate = false) {
     document.body.style.overflow = '';
     renderEveryonePanel();
   }
+
+  // 重置过渡标志
+  setTimeout(() => { _returningFromUserPage = false; }, 50);
 }
 
 // ================================================================
@@ -1575,10 +1581,13 @@ function checkScrollHint(){
   }
 }
 
-let _modalPushed=false, _userPagePushed=false;
+let _modalPushed=false, _userPagePushed=false, _returningFromUserPage=false;
 
 // 全局 popstate 监听：手机返回键/左滑触发时关闭覆盖层
 window.addEventListener('popstate', function(e) {
+  // 如果是从用户页返回详情页的过渡，跳过处理
+  if (_returningFromUserPage) return;
+
   const userOverlay = document.getElementById('userPageOverlay');
   const modalOverlay = document.getElementById('modalOverlay');
   // 优先关闭用户页，再关闭道具详情
