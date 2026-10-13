@@ -971,8 +971,8 @@ async function loadAllItems() {
     showedCache = true;
     console.log('✅ 显示缓存数据，', allItems.length, '个道具');
   } else {
-    // No cache, show loading state
-    showLoadingState('everyoneContent');
+    // No cache — don't show loading skeleton, wait for API response
+    // This prevents flash when API returns quickly
   }
 
   // STEP 2: Fetch fresh data in background
