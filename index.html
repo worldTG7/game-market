@@ -1583,6 +1583,14 @@ function openDetailById(id, fromUserPage = false) {
   currentMediaIndex = 0;
   renderModalMedia();
 
+  // 动态计算 z-index：找到当前最高层级，再加 10
+  const userPageVisible = document.getElementById('userPageOverlay').classList.contains('show');
+  const modalVisible = document.getElementById('modalOverlay').classList.contains('show');
+  let baseZ = 210;
+  if (userPageVisible) baseZ = Math.max(baseZ, 220);
+  if (modalVisible) baseZ = Math.max(baseZ, parseInt(document.getElementById('modalOverlay').style.zIndex || '210'));
+  const newZ = baseZ + 10;
+
   // Populate user bar at top
   const userBar = document.getElementById('modalUserBar');
   const closeBtn = '<button class="modal-close" onclick="closeModal()">✕</button>';
@@ -1624,7 +1632,10 @@ function openDetailById(id, fromUserPage = false) {
   // Add share button for all users (logged-in owner gets deploy option, others get link copy)
   const actionsEl = document.getElementById('modalActions');
   actionsEl.innerHTML = `<button class="btn btn-teal" onclick="shareCurrentItem()" style="flex:1"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;vertical-align:-3px;margin-right:4px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享此道具</button>`;
-  document.getElementById('modalOverlay').classList.add('show');
+  const modalOverlay = document.getElementById('modalOverlay');
+  // 使用动态计算的 z-index
+  modalOverlay.style.zIndex = newZ;
+  modalOverlay.classList.add('show');
   document.body.style.overflow='hidden';
   history.pushState({modal:true}, '');
   _modalPushed = true;
