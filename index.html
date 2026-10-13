@@ -772,16 +772,22 @@ function updateHeader() {
 }
 
 function shareMainPage() {
+  console.log('shareMainPage called, currentUser:', currentUser);
   if (!currentUser) {
+    console.log('No currentUser');
     showToast('请先登录','error');
     return;
   }
   const branchName = toBranchName(currentUser.username);
+  console.log('branchName:', branchName);
   // 直接复制远程分享链接，无需部署
   const url = 'https://worldtg7.github.io/game-market/?user=' + encodeURIComponent(branchName);
+  console.log('URL to copy:', url);
   navigator.clipboard.writeText(url).then(() => {
+    console.log('Clipboard write success');
     showToast('分享链接已复制','success');
-  }).catch(() => {
+  }).catch((err) => {
+    console.log('Clipboard write failed:', err);
     // fallback: 弹出提示让用户手动复制
     prompt('复制以下链接分享：', url);
   });
