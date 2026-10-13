@@ -85,10 +85,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{display:none}
 .modal-close{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:210}
-.modal-user-bar{padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
-.modal-user-bar .user-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8f5c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.9rem;flex-shrink:0}
-.modal-user-bar .user-name{font-size:.9rem;font-weight:600;color:var(--text)}
-.modal-user-bar .post-time{font-size:.75rem;color:var(--text2);margin-left:auto}
+.modal-user-bar{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;flex-shrink:0}
+.modal-user-bar .user-link{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background .2s}
+.modal-user-bar .user-link:active{background:rgba(255,255,255,.05)}
+.modal-user-bar .user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8f5c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.8rem;flex-shrink:0}
+.modal-user-bar .user-name{font-size:.88rem;font-weight:600;color:var(--text)}
+.modal-user-bar .post-time{font-size:.75rem;color:var(--text2);margin-left:10px}
 .modal-media{width:100%;flex:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:0;z-index:1}
 .modal-media img,.modal-media video{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;user-select:none;-webkit-user-drag:none;transition:opacity .25s ease}
 .media-nav{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5}
@@ -191,12 +193,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 @media(min-width:420px){.card-grid{grid-template-columns:repeat(3,1fr)}}
 
 /* ===== USER PAGE HEADER ===== */
-.user-page-header{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 16px;margin-bottom:40px;display:flex;align-items:center;gap:28px}
-.user-page-back{width:44px;height:44px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:1.2rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s ease}
+.user-page-header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 16px;margin-bottom:40px;display:flex;align-items:center;gap:16px}
+.user-page-back{width:40px;height:40px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s ease}
 .user-page-back:active{transform:scale(.9);background:var(--border);color:var(--accent)}
-.user-page-info{flex:1;min-width:0;display:flex;align-items:baseline;gap:10px}
-.user-page-name{font-size:1.2rem;font-weight:700;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.4}
-.user-page-count{font-size:.8rem;color:var(--muted);margin-top:0;opacity:.8}
+.user-page-info{flex:1;min-width:0;display:flex;align-items:center;gap:12px}
+.user-page-name{font-size:1.15rem;font-weight:700;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.4}
+.user-page-count{font-size:.8rem;color:var(--muted);opacity:.8;line-height:1.4}
 @keyframes pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.1);opacity:.8}}
 .card-time{font-size:.62rem;color:var(--muted);margin-top:4px}
 .tag.user{cursor:pointer;transition:all .2s}
@@ -1420,8 +1422,9 @@ function openDetailById(id) {
   const userBar = document.getElementById('modalUserBar');
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
+    const userClickHandler = currentItem._owner ? `onclick="closeModal();viewUserPage('${escJs(currentItem._owner)}');switchTab('everyone')"` : '';
     userBar.innerHTML = `
-      ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name" style="cursor:pointer" onclick="closeModal();viewUserPage('${escJs(currentItem._owner)}');switchTab('everyone')">${esc(currentItem._owner)}</div>` : ''}
+      ${currentItem._owner ? `<div class="user-link" ${userClickHandler}><div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div></div>` : ''}
       ${currentItem.time ? `<div class="post-time">${formatTime(currentItem.time)}</div>` : ''}
     `;
     userBar.style.display = 'flex';
