@@ -904,10 +904,10 @@ async function loadMyItems() {
   if (!exists) { forceLogout('账户已被删除，请重新登录'); return; }
   const files = await ghListDir(branch, 'data');
   const results = await Promise.allSettled(files.map(f => ghReadFile(branch, 'data/'+f.name)));
-  const remoteItems = results.filter(r=>r.status==='fulfilled'&&r.value&&r.value.id).map(r=>r.value);
+  const remoteItems = results.filter(r=>r.status==='fulfilled'&&r.value&&r.value.id).map(r=>({...r.value, _owner: branch}));
   // Merge: keep local items that might not have synced yet
   const remoteIds = new Set(remoteItems.map(it => it.id));
-  const localOnly = myItems.filter(it => !remoteIds.has(it.id));
+  const localOnly = myItems.filter(it => !remoteIds.has(it.id)).map(it => ({...it, _owner: it._owner || branch}));
   myItems = [...remoteItems, ...localOnly];
   myItems.sort((a,b)=>(b.time||'').localeCompare(a.time||''));
   renderMyItems();
