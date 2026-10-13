@@ -100,7 +100,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .modal-close{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,rgba(0,0,0,.5),rgba(0,0,0,.35));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.95);font-size:1.1rem;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s ease;box-shadow:0 2px 12px rgba(0,0,0,.3);flex-shrink:0;margin:0;padding:0}
 .modal-close:hover{transform:scale(1.05);background:linear-gradient(135deg,rgba(0,0,0,.6),rgba(0,0,0,.45));border-color:rgba(255,255,255,.35);box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .modal-close:active{transform:scale(.92);background:linear-gradient(135deg,rgba(0,0,0,.7),rgba(0,0,0,.55));color:#fff}
-.detail-header{padding:12px 16px;height:64px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;flex-shrink:0;justify-content:space-between;gap:10px}
+.detail-header{position:sticky;top:0;z-index:10;padding:12px 16px;height:64px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;flex-shrink:0;justify-content:space-between;gap:10px}
 .detail-header .user-info{display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;min-width:0}
 .detail-header .user-info:active{background:rgba(255,255,255,.05)}
 .detail-header .user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8f5c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.9rem;flex-shrink:0;box-shadow:0 2px 8px rgba(255,107,53,.3)}
@@ -386,7 +386,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
 <!-- USER PAGE OVERLAY -->
 <div class="user-page-overlay" id="userPageOverlay">
-  <div class="user-page-header" id="userPageHeader"></div>
+  <div class="detail-header" id="userPageHeader"></div>
   <div class="user-page-content" id="userPageContent"></div>
 </div>
 
