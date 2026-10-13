@@ -2045,11 +2045,11 @@ async function publishItem() {
 
   myItems.unshift(item);
   resetForm();
+  showToast('✅ 发布成功！数据同步需要1-3分钟，请耐心等待','success');
 
   try {
     await saveItem(item);
     renderMyItems();
-    showToast('✅ 发布成功！数据同步需要1-3分钟，请耐心等待','success');
     await loadAllItems();
   } catch(e) {
     showToast('保存失败: '+e.message,'error');
