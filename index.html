@@ -1151,16 +1151,25 @@ async function loadAllItems() {
       remoteItems.push(...localOnly);
     }
 
-    // 从缓存中读取本地点赞数，使用较大的值（本地点赞可能尚未同步到远端）
+    // 从缓存中读取本地点赞数，保护本地点赞过的道具不被远端覆盖
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
         const cacheData = JSON.parse(cached);
         const cacheMap = new Map(cacheData.items.map(it => [it.id, it.likes || 0]));
         remoteItems.forEach(it => {
-          const localLikes = cacheMap.get(it.id);
-          if (localLikes !== undefined && localLikes > (it.likes || 0)) {
-            it.likes = localLikes;
+          // 如果本次会话中本地点赞过此道具，优先使用本地点赞数
+          if (locallyLikedItems.has(it.id)) {
+            const currentLocalItem = allItems.find(local => local.id === it.id);
+            if (currentLocalItem) {
+              it.likes = currentLocalItem.likes || 0;
+            }
+          } else {
+            // 否则使用缓存和远端中的较大值
+            const localLikes = cacheMap.get(it.id);
+            if (localLikes !== undefined && localLikes > (it.likes || 0)) {
+              it.likes = localLikes;
+            }
           }
         });
       } catch(e) { /* ignore */ }
@@ -1210,7 +1219,10 @@ function switchTab(tab) {
   document.getElementById(panelMap[tab]).classList.add('active');
   document.getElementById('headerSub').textContent = '免费分享，请勿上传隐私信息';
   updateHeader(); // 更新分享按钮显示状态
-  if (tab==='everyone') { loadAllItems(); }
+  if (tab==='everyone') {
+    // 仅在数据未加载时才拉取，避免覆盖本地点赞
+    if (!isDataLoaded) loadAllItems();
+  }
   if (tab==='mine') { loadMyItems(); }
   if (tab==='upload') { updateUploadPanel(); }
 }
@@ -1633,6 +1645,7 @@ async function confirmDeleteItem(idx) {
 // ================================================================
 let currentMediaIndex=0, currentItem=null;
 let pendingLikes = 0; // 待同步的点赞数
+let locallyLikedItems = new Set(); // 本次会话中本地修改过点赞的道具ID
 
 function openDetailById(id, fromUserPage = false) {
   const modalOverlay = document.getElementById('modalOverlay');
@@ -2133,6 +2146,9 @@ function likeItem() {
   // 本地累积
   pendingLikes++;
   currentItem.likes = (currentItem.likes || 0) + 1;
+
+  // 标记为本次会话中本地点赞过的道具
+  locallyLikedItems.add(currentItem.id);
 
   // 立即更新 UI
   const likeCountEl = document.querySelector('.like-btn .like-count');
