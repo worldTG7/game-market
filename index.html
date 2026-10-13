@@ -1428,11 +1428,11 @@ function bindSearchMine() {
                 ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
                 ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
               </div>
+              ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
               <div class="card-meta-row">
                 ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
                 ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
               </div>
-              ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
             </div>
           </div>`;
         });
@@ -1642,11 +1642,11 @@ function renderCardGrid(items, gridId, opts = {}) {
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
         </div>
+        ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
         <div class="card-meta-row">
           ${it._owner && !opts.hideOwner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
-        ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
       </div>
     </div>`;
   });
@@ -1737,11 +1737,11 @@ function loadMoreItems() {
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
         </div>
+        ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
         <div class="card-meta-row">
           ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
-        ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
       </div>
     </div>`;
   });
@@ -1833,11 +1833,11 @@ function renderMinePanel() {
             ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
             ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
           </div>
+          ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
           <div class="card-meta-row">
             ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
             ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
           </div>
-          ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
         </div>
       </div>`;
     });
@@ -1940,11 +1940,11 @@ function viewUserPage(username, fromModal = false) {
             ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
             ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
           </div>
+          ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
           <div class="card-meta-row">
             ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
             ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
           </div>
-          ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
         </div>
       </div>`;
     });
@@ -1982,11 +1982,11 @@ function viewUserPage(username, fromModal = false) {
                 ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
                 ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
               </div>
+              ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
               <div class="card-meta-row">
                 ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
                 ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
               </div>
-              ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
             </div>
           </div>`;
         });
