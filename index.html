@@ -79,9 +79,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-thumb-wrapper{position:relative;width:100%;aspect-ratio:4/3}
 
 /* ===== DETAIL MODAL ===== */
-.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;overflow:hidden}
-.modal-overlay.show{display:flex}
-.modal{width:100%;height:100dvh;max-width:100%;background:var(--bg);overflow:hidden;animation:slideUp .25s ease;display:flex;flex-direction:column;touch-action:none}
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.85);display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-overlay.show{display:block}
+.modal{width:100%;min-height:100dvh;max-width:100%;background:var(--bg);animation:slideUp .25s ease;display:flex;flex-direction:column;position:relative}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{display:none}
 .modal-close{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.85);font-size:1rem;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:210;transition:all .15s ease}
@@ -92,8 +92,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .modal-user-bar .user-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8f5c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.8rem;flex-shrink:0}
 .modal-user-bar .user-name{font-size:.88rem;font-weight:600;color:var(--text)}
 .modal-user-bar .post-time{font-size:.75rem;color:var(--text2);margin-left:10px}
-.modal-media{width:100%;flex:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:0;z-index:1}
+.modal-media{width:100%;height:60vh;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;flex-shrink:0;z-index:1}
 .modal-media img,.modal-media video{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;user-select:none;-webkit-user-drag:none;transition:opacity .25s ease}
+.scroll-hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:.7rem;color:rgba(255,255,255,.5);animation:bounce 2s infinite;pointer-events:none;z-index:5}
+@keyframes bounce{0%,20%,50%,80%,100%{transform:translateX(-50%) translateY(0)}40%{transform:translateX(-50%) translateY(-6px)}60%{transform:translateX(-50%) translateY(-3px)}}
 .media-nav{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5}
 .media-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.3);border:none;cursor:pointer;transition:all .2s}
 .media-dot.active{background:#fff;width:18px;border-radius:3px}
@@ -1135,6 +1137,7 @@ function lazyLoadImages() {
 let everyonePage = 0;
 const PAGE_SIZE = 20;
 let isViewingUserPage = false;
+let userPageReturnContext = null; // 记录用户页返回上下文
 
 function renderEveryonePanel() {
   // 如果正在查看用户页，跳过渲染，避免覆盖用户页内容
@@ -1322,7 +1325,15 @@ async function deleteMyItem(itemId) {
 // ================================================================
 // VIEW USER PAGE (查看某个用户的主页)
 // ================================================================
-function viewUserPage(username) {
+function viewUserPage(username, fromModal = false) {
+  // 保存返回上下文
+  if (fromModal && currentItem) {
+    userPageReturnContext = { type: 'modal', itemId: currentItem.id };
+    closeModal();
+  } else {
+    userPageReturnContext = null;
+  }
+
   // 设置标志，防止后台渲染覆盖用户页
   isViewingUserPage = true;
 
@@ -1379,7 +1390,17 @@ function closeUserPage() {
   isViewingUserPage = false;
   document.getElementById('userPageOverlay').classList.remove('show');
   document.body.style.overflow = '';
-  renderEveryonePanel();
+
+  // 恢复之前的上下文
+  if (userPageReturnContext && userPageReturnContext.type === 'modal') {
+    const itemId = userPageReturnContext.itemId;
+    userPageReturnContext = null;
+    // 使用 setTimeout 确保用户页完全关闭后再打开道具详情
+    setTimeout(() => openDetailById(itemId), 100);
+  } else {
+    userPageReturnContext = null;
+    renderEveryonePanel();
+  }
 }
 
 // ================================================================
@@ -1440,7 +1461,7 @@ function openDetailById(id) {
   const userBar = document.getElementById('modalUserBar');
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
-    const userClickHandler = currentItem._owner ? `onclick="closeModal();viewUserPage('${escJs(currentItem._owner)}');switchTab('everyone')"` : '';
+    const userClickHandler = currentItem._owner ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)"` : '';
     userBar.innerHTML = `
       ${currentItem._owner ? `<div class="user-link" ${userClickHandler}><div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div></div>` : ''}
       ${currentItem.time ? `<div class="post-time">${formatTime(currentItem.time)}</div>` : ''}
@@ -1507,6 +1528,9 @@ function renderModalMedia() {
   }
   el.innerHTML=h;
 
+  // 检查是否需要显示滚动提示
+  checkScrollHint();
+
   // 单图时禁用滑动，多图时添加触摸滑动支持
   if(m.length<=1){
     el.ontouchstart=el.ontouchmove=el.ontouchend=null;
@@ -1519,6 +1543,28 @@ function renderModalMedia() {
 }
 function navMedia(dir){const l=currentItem.media.length;currentMediaIndex=(currentMediaIndex+dir+l)%l;renderModalMedia();}
 function goMedia(i){currentMediaIndex=i;renderModalMedia();}
+
+function checkScrollHint(){
+  const overlay=document.getElementById('modalOverlay');
+  const modal=document.querySelector('.modal');
+  const existingHint=document.querySelector('.scroll-hint');
+  if(existingHint)existingHint.remove();
+  // 检查内容是否超出视口高度
+  if(modal.scrollHeight>overlay.clientHeight){
+    const hint=document.createElement('div');
+    hint.className='scroll-hint';
+    hint.textContent='↓ 下滑查看更多';
+    modal.appendChild(hint);
+    // 滚动后自动隐藏提示
+    overlay.onscroll=()=>{
+      if(overlay.scrollTop>50&&hint.parentNode){
+        hint.style.opacity='0';
+        setTimeout(()=>hint.remove(),300);
+      }
+    };
+  }
+}
+
 function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))return;document.getElementById('modalOverlay').classList.remove('show');document.body.style.overflow='';const v=document.querySelector('.modal-media video');if(v)v.pause();}
 function contactSeller(){
   if(currentItem._owner) showToast('卖家: '+currentItem._owner+'，请在群内联系','success');
