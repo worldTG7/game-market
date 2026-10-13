@@ -1354,12 +1354,11 @@ function renderMinePanel() {
   }
 
   const display = (myItems.length ? myItems : allItems.filter(it => it._owner === toBranchName(currentUser.username))).filter(it => !it._deleted);
-  let h = '<div style="display:flex;justify-content:flex-end;padding:12px 16px 0"><button class="share-header-btn" onclick="openDeployModal(\'user\',toBranchName(currentUser.username))"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享主页</button></div>';
+  let h = '';
   if (!display.length) {
-    h += `<div class="empty-state">
+    c.innerHTML = `<div class="empty-state">
       <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <p>你还没有发布任何道具<br>切换到「上传」标签发布</p></div>`;
-    c.innerHTML = h;
     c.classList.remove('panel-loading');
     return;
   }
