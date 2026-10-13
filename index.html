@@ -242,18 +242,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card{position:relative}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
-/* ===== LOADING SCREEN ===== */
-.loading-screen{position:fixed;inset:0;z-index:9999;background:rgba(15,17,23,.95);display:flex;align-items:center;justify-content:center;transition:opacity .3s ease}
-.loading-screen.fade-out{opacity:0;pointer-events:none}
-.loading-text{font-size:.88rem;color:var(--text2);letter-spacing:.05em}
+/* ===== PANEL LOADING ===== */
+.panel-loading{display:flex;align-items:center;justify-content:center;padding:60px 20px;color:var(--text2);font-size:.88rem;letter-spacing:.05em}
 </style>
 </head>
 <body>
-
-<!-- ===== LOADING SCREEN ===== -->
-<div class="loading-screen" id="loadingScreen">
-  <div class="loading-text">加载中…</div>
-</div>
 
 <!-- ===== APP ===== -->
 <div id="mainApp">
@@ -269,11 +262,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
   <!-- 看大家 -->
   <section class="panel active" id="panelEveryone">
-    <div id="everyoneContent"><div class="empty-state"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 00-8 0v2"/></svg><p>暂无道具上架<br>点击右上角「登录/注册」发布你的道具</p></div></div>
+    <div id="everyoneContent"><div class="panel-loading">加载中…</div></div>
   </section>
 
   <!-- 我的 -->
-  <section class="panel" id="panelMine"><div id="mineContent"><div class="empty-state"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><p>请先登录查看你的道具</p></div></div></section>
+  <section class="panel" id="panelMine"><div id="mineContent"><div class="panel-loading">加载中…</div></div></section>
 
   <!-- 上传 -->
   <section class="panel" id="panelUpload">
