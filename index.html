@@ -83,10 +83,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .empty-state p{font-size:.9rem;line-height:1.6}
 
 /* ===== UPLOAD PROGRESS ===== */
-.upload-progress{display:none;margin:16px 0;padding:16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)}
-.upload-progress.show{display:block}
-.upload-progress-text{font-size:.85rem;color:var(--text2);margin-bottom:8px}
-.upload-progress-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.upload-progress{display:none;position:relative;margin:8px 0;padding:10px 12px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)}
+.upload-progress.show{display:flex;align-items:center;gap:10px}
+.upload-progress-text{font-size:.75rem;color:var(--text2);white-space:nowrap;min-width:0;flex-shrink:1;overflow:hidden;text-overflow:ellipsis}
+.upload-progress-bar{flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;min-width:60px}
 .upload-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#ff9a5c);border-radius:3px;transition:width .3s ease;width:0%}
 
 .video-badge{position:absolute;top:6px;right:6px;background:rgba(255,107,53,.85);color:#fff;font-size:.55rem;padding:2px 6px;border-radius:4px;font-weight:600;letter-spacing:.03em}
@@ -157,10 +157,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .form-input:focus,.form-textarea:focus,.form-select:focus{border-color:var(--accent)}
 .form-textarea{resize:vertical;min-height:100px;line-height:1.6}
 .form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7084' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
-.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:24px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:12px 16px;text-align:center;cursor:pointer;transition:all .2s;position:relative;display:flex;align-items:center;justify-content:center;gap:8px}
 .upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:var(--accent-glow)}
-.upload-zone svg{width:36px;height:36px;stroke:var(--muted);fill:none;stroke-width:1.5;margin-bottom:8px}
-.upload-zone p{font-size:.8rem;color:var(--muted)}
+.upload-zone svg{width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:1.5;flex-shrink:0}
+.upload-zone span{font-size:.8rem;color:var(--muted)}
 .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .upload-previews{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .upload-preview{position:relative;aspect-ratio:1;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border)}
@@ -320,7 +320,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
         <label class="form-label">图片 / 视频</label>
         <div class="upload-zone" id="uploadZone">
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <p>点击或拖拽上传图片/视频<br><span style="font-size:.7rem">支持 JPG PNG MP4，单文件 ≤ 50MB</span></p>
+          <span>上传图片/视频</span>
           <input type="file" id="fileInput" multiple accept="image/*,video/mp4,video/quicktime">
         </div>
         <div class="upload-progress" id="uploadProgress">
@@ -333,9 +333,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
         <button class="btn btn-secondary" onclick="resetForm()">清空</button>
         <button class="btn btn-primary" onclick="publishItem()">发布道具</button>
       </div>
-
-      <!-- My items list -->
-      <div class="my-items" id="myItemsList"></div>
     </div>
   </section>
 
@@ -1555,22 +1552,8 @@ function closeUserPage(fromPopstate = false) {
 // MY ITEMS LIST (上传面板)
 // ================================================================
 function renderMyItems() {
-  const el = document.getElementById('myItemsList');
-  // Only show non-deleted items
-  const activeItems = myItems.filter(it => !it._deleted);
-  if (!activeItems.length) { el.innerHTML = ''; return; }
-  let h = '<div style="font-size:.78rem;font-weight:600;color:var(--text2);margin-bottom:10px">📦 我已发布的道具</div>';
-  activeItems.forEach((it,i) => {
-    const th = renderMyItemThumb(it);
-    // Find original index in myItems for delete
-    const origIdx = myItems.indexOf(it);
-    h += `<div class="my-item-row">
-      ${th}
-      <div class="my-item-info"><div class="my-item-title">${esc(it.title)}</div><div class="my-item-price ${it.priceType === 'gold' ? 'gold' : 'rmb'}"><span class="price-num">${it.price}</span></div></div>
-      <button class="my-item-del" onclick="confirmDeleteItem(${origIdx})">删除</button>
-    </div>`;
-  });
-  el.innerHTML = h;
+  // myItemsList removed - functionality moved to "我的" tab
+  return;
 }
 
 async function confirmDeleteItem(idx) {
