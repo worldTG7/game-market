@@ -1303,7 +1303,19 @@ async function deleteMyItem(itemId) {
 // ================================================================
 function viewUserPage(username) {
   const header = document.getElementById('userPageHeader');
-  const userItems = allItems.filter(it => it._owner === username && !it._deleted);
+  // 确保传入的是分支名格式
+  const branchName = toBranchName(username);
+  console.log('查看用户页:', username, '分支名:', branchName);
+  const userItems = allItems.filter(it => {
+    const ownerBranch = it._owner;
+    const match = ownerBranch === branchName && !it._deleted;
+    if (!match) {
+      console.log('  过滤掉:', it.title, 'owner:', ownerBranch, '期望:', branchName);
+    }
+    return match;
+  });
+  console.log('匹配到', userItems.length, '个道具');
+
   header.style.display = 'flex';
   header.innerHTML = `
     <button class="user-page-back" onclick="closeUserPage()">←</button>
