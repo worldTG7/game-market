@@ -81,7 +81,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-meta-time{color:var(--text2)}
 
 /* ===== SEARCH BOX ===== */
-.search-box{position:sticky;top:56px;z-index:50;margin-bottom:12px;background:var(--bg);padding:12px 0}
+.search-box{margin-bottom:12px;padding:12px 0}
 .search-input-wrap{position:relative;display:flex;align-items:center}
 .search-input-wrap input{width:100%;padding:10px 12px 10px 36px;background:var(--surface);border:1px solid var(--border);border-radius:20px;color:var(--text);font-size:.85rem;outline:none;transition:border-color .2s}
 .search-input-wrap input:focus{border-color:var(--accent)}
@@ -1433,7 +1433,6 @@ function clearSearch(inputId) {
   if (input) {
     input.value = '';
     input.dispatchEvent(new Event('input'));
-    input.focus();
   }
 }
 
