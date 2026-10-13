@@ -1507,7 +1507,11 @@ function renderModalMedia() {
   }
   el.innerHTML=h;
 
-  // 添加触摸滑动支持
+  // 单图时禁用滑动，多图时添加触摸滑动支持
+  if(m.length<=1){
+    el.ontouchstart=el.ontouchmove=el.ontouchend=null;
+    return;
+  }
   let startX=0, startY=0, isDragging=false;
   el.ontouchstart=(e)=>{startX=e.touches[0].clientX;startY=e.touches[0].clientY;isDragging=true;};
   el.ontouchmove=(e)=>{if(!isDragging)return;const dx=e.touches[0].clientX-startX;const dy=e.touches[0].clientY-startY;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>10){e.preventDefault();}};
