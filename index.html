@@ -265,8 +265,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
           <input type="file" id="fileInput" multiple="" accept="image/*,video/mp4,video/quicktime">
         </div>
         <div class="upload-progress" id="uploadProgress">
-          <div class="upload-progress-text" id="uploadProgressText">媒体文件上传完成</div>
-          <div class="upload-progress-bar"><div class="upload-progress-fill" id="uploadProgressFill" style="width: 100%; transition: none;"></div></div>
+          <div class="upload-progress-text" id="uploadProgressText">准备上传...</div>
+          <div class="upload-progress-bar"><div class="upload-progress-fill" id="uploadProgressFill"></div></div>
         </div>
         <div class="upload-previews" id="uploadPreviews"></div>
       </div>
@@ -307,21 +307,21 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <button class="login-close" onclick="closeLogin()">✕</button>
     <h2>登录 / 注册</h2>
     <div class="auth-tabs">
-      <button class="auth-tab" id="tabLogin" onclick="switchAuthTab('login')">登录</button>
-      <button class="auth-tab active" id="tabRegister" onclick="switchAuthTab('register')">注册</button>
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">登录</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">注册</button>
     </div>
-    <div class="auth-form" id="loginForm">
+    <div class="auth-form active" id="loginForm">
       <div class="form-section"><label class="form-label"><span class="req">*</span> 用户名</label><input class="form-input" id="loginUser" placeholder="输入用户名" autocomplete="username"></div>
       <div class="form-section"><label class="form-label"><span class="req">*</span> 密码</label><input class="form-input" id="loginPass" type="password" placeholder="输入密码" autocomplete="current-password"></div>
       <button class="btn btn-primary" style="width:100%" onclick="doLogin()" id="loginBtn">登录</button>
       <div class="auth-msg" id="loginMsg"></div>
     </div>
-    <div class="auth-form active" id="registerForm">
+    <div class="auth-form" id="registerForm">
       <div class="form-section"><label class="form-label"><span class="req">*</span> 用户名</label><input class="form-input" id="regUser" placeholder="3-20位字母数字下划线" autocomplete="off"></div>
       <div class="form-section"><label class="form-label"><span class="req">*</span> 密码</label><input class="form-input" id="regPass" type="password" placeholder="至少4位密码" autocomplete="new-password"></div>
       <div class="form-section"><label class="form-label"><span class="req">*</span> 确认密码</label><input class="form-input" id="regPass2" type="password" placeholder="再次输入密码" autocomplete="new-password"></div>
-      <button class="btn btn-primary" style="width:100%" onclick="doRegister()" id="regBtn" disabled="">注册中...</button>
-      <div class="auth-msg success" id="regMsg">✅ 注册成功！正在登录...</div>
+      <button class="btn btn-primary" style="width:100%" onclick="doRegister()" id="regBtn">注册</button>
+      <div class="auth-msg" id="regMsg"></div>
     </div>
   </div>
 </div>
@@ -339,7 +339,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   </div>
 </div>
 
-<div class="toast" id="toast">✅ 发布成功！数据同步需要1-3分钟</div>
+<div class="toast" id="toast"></div>
 
 <!-- DEPLOY MODAL -->
 
