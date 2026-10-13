@@ -243,7 +243,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 /* ===== PANEL LOADING ===== */
-.panel-loading{display:flex;align-items:center;justify-content:center;padding:60px 20px;color:var(--text2);font-size:.88rem;letter-spacing:.05em}
+@keyframes panelFade{0%,100%{opacity:.4}50%{opacity:.7}}
+.panel-loading{display:flex;align-items:center;justify-content:center;padding:80px 20px;color:var(--text2);font-size:.88rem;letter-spacing:.08em;opacity:.5;animation:panelFade 1.8s ease-in-out infinite}
 </style>
 </head>
 <body>
@@ -419,6 +420,7 @@ let isGuest = true;
 let allItems = [];       // all users' items (buy view)
 let myItems = [];        // current user's items (sell view)
 let uploadedMedia = [];
+let isDataLoaded = false; // track if initial data has been loaded
 
 // ================================================================
 // HELPERS
@@ -1015,6 +1017,7 @@ async function loadAllItems() {
       allItems.push(...localOnly);
     }
     allItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
+    isDataLoaded = true;
     renderEveryonePanel();
     renderMinePanel();
     showedCache = true;
@@ -1077,6 +1080,7 @@ async function loadAllItems() {
 
     if (newHash !== oldHash || !showedCache) {
       allItems = activeItems;
+      isDataLoaded = true;
       renderEveryonePanel();
       renderMinePanel();
       console.log('✅ 数据已更新，', allItems.length, '个道具（已过滤删除项）');
@@ -1090,6 +1094,7 @@ async function loadAllItems() {
     // Keep showing cached data if available
     if (!cachedItems || cachedItems.length === 0) {
       allItems = currentUser ? myItems.map(i=>({...i,_owner:currentUser.username})) : [];
+      isDataLoaded = true;
       renderEveryonePanel();
       renderMinePanel();
     }
@@ -1178,6 +1183,12 @@ function renderEveryonePanel() {
   if (isViewingUserPage) return;
 
   const c = document.getElementById('everyoneContent');
+
+  // 如果数据还没加载完成，保持加载状态
+  if (!isDataLoaded) {
+    return;
+  }
+
   const display = allItems.filter(it => !it._deleted);
   if (!display.length) {
     c.innerHTML = `<div class="empty-state">
@@ -1301,12 +1312,20 @@ function setupInfiniteScroll() {
 // ================================================================
 function renderMinePanel() {
   const c = document.getElementById('mineContent');
+
+  // 如果用户未登录，显示登录提示
   if (!currentUser) {
     c.innerHTML = `<div class="empty-state">
       <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <p>请先登录查看你的道具</p></div>`;
     return;
   }
+
+  // 如果数据还没加载完成，保持加载状态
+  if (!isDataLoaded) {
+    return;
+  }
+
   const display = (myItems.length ? myItems : allItems.filter(it => it._owner === toBranchName(currentUser.username))).filter(it => !it._deleted);
   let h = '<div style="display:flex;justify-content:flex-end;padding:12px 16px 0"><button class="share-header-btn" onclick="openDeployModal(\'user\',toBranchName(currentUser.username))"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享主页</button></div>';
   if (!display.length) {
@@ -1314,6 +1333,7 @@ function renderMinePanel() {
       <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <p>你还没有发布任何道具<br>切换到「上传」标签发布</p></div>`;
     c.innerHTML = h;
+    c.classList.remove('panel-loading');
     return;
   }
   h += '<div class="card-grid">';
@@ -2330,7 +2350,8 @@ render();
   updateHeader();
   document.getElementById('headerSub').textContent = '免费分享，请勿上传隐私信息';
   updateUploadPanel();
-  renderEveryonePanel();
+  // Don't call renderEveryonePanel/renderMinePanel here - HTML already has loading indicators
+  // They will be called when data loads in loadAllItems()
 
   // 立即淡出加载界面（UI已准备好，不要等数据加载）
   const ls = document.getElementById('loadingScreen');
