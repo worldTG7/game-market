@@ -1586,20 +1586,21 @@ function openDetailById(id, fromUserPage = false) {
   const closeBtn = '<button class="modal-close" onclick="closeModal()">✕</button>';
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
+    const canClickUser = currentItem._owner && !fromUserPage;
     userBar.innerHTML = `
-      <div class="user-info" id="detailUserInfo">
+      <div class="user-info"${canClickUser ? ' style="cursor:pointer"' : ''}>
         ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
       </div>
       <div class="actions">${closeBtn}</div>
     `;
-    // Add click handler via addEventListener (more reliable than inline onclick)
-    if (currentItem._owner && !fromUserPage) {
-      const ownerName = currentItem._owner;
-      document.getElementById('detailUserInfo').addEventListener('click', function(e) {
+    // Use event delegation on userBar — most reliable click detection
+    userBar.onclick = function(e) {
+      if (e.target.closest('.modal-close') || e.target.closest('.actions')) return;
+      if (canClickUser && e.target.closest('.user-info')) {
         e.stopPropagation();
-        viewUserPage(ownerName, true);
-      });
-    }
+        viewUserPage(currentItem._owner, true);
+      }
+    };
     userBar.style.display = 'flex';
   } else {
     userBar.innerHTML = closeBtn;
