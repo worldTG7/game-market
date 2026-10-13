@@ -798,6 +798,49 @@ async function saveItem(item) {
   if (!currentUser) return;
   const branch = toBranchName(currentUser.username);
   await ghWriteFile(branch, 'data/'+item.id+'.json', item, '发布道具: '+item.title);
+
+  // Update main branch index for fast loading
+  await updateMainIndex();
+}
+
+// Update the main branch index.json with all items (for fast loading)
+async function updateMainIndex() {
+  try {
+    const mainBranch = await ghDefaultBranch();
+
+    // Load current index
+    let indexData = await ghReadFile(mainBranch, 'index.json');
+    if (!indexData || !indexData.items) {
+      indexData = { items: [], updatedAt: new Date().toISOString() };
+    }
+
+    // Load all items from all branches
+    const branches = await ghGet(`/repos/${GH.owner}/${GH.repo}/branches`);
+    const userBranches = branches.filter(b => b.name !== mainBranch && b.name !== 'gh-pages');
+
+    const results = await Promise.allSettled(userBranches.map(async b => {
+      const files = await ghListDir(b.name, 'data');
+      const items = await Promise.allSettled(files.map(f => ghReadFile(b.name, 'data/'+f.name)));
+      return items.filter(r=>r.status==='fulfilled'&&r.value&&r.value.id)
+        .map(r => ({ ...r.value, _owner: b.name }));
+    }));
+
+    let allItems = [];
+    results.forEach(r => { if (r.status==='fulfilled'&&r.value) allItems.push(...r.value); });
+
+    // Sort by time (newest first)
+    allItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
+
+    // Save index
+    indexData.items = allItems;
+    indexData.updatedAt = new Date().toISOString();
+    await ghWriteFile(mainBranch, 'index.json', indexData, '更新索引: ' + allItems.length + '个道具');
+
+    console.log('✅ Main index updated with', allItems.length, 'items');
+  } catch(e) {
+    console.warn('Failed to update main index:', e);
+    // Don't throw - index update is optional optimization
+  }
 }
 
 async function deleteItemData(item) {
@@ -848,6 +891,9 @@ async function deleteItemData(item) {
       }
     }
   }
+
+  // Update main branch index
+  await updateMainIndex();
 }
 
 async function loadAllItems() {
@@ -855,21 +901,30 @@ async function loadAllItems() {
   showLoadingState('everyoneContent');
 
   try {
-    const branches = await ghGet(`/repos/${GH.owner}/${GH.repo}/branches`);
-    const defaultBranch = await ghDefaultBranch();
-    const userBranches = branches.filter(b => b.name !== defaultBranch && b.name !== 'gh-pages');
-
-    // Parallel loading with progress tracking
-    const results = await Promise.allSettled(userBranches.map(async b => {
-      const files = await ghListDir(b.name, 'data');
-      // Parallel load all items in this branch
-      const items = await Promise.allSettled(files.map(f => ghReadFile(b.name, 'data/'+f.name)));
-      return items.filter(r=>r.status==='fulfilled'&&r.value&&r.value.id)
-        .map(r => ({ ...r.value, _owner: b.name }));
-    }));
+    // FAST PATH: Try loading from main branch index (single API call)
+    const mainBranch = await ghDefaultBranch();
+    const indexData = await ghReadFile(mainBranch, 'index.json');
 
     let remoteItems = [];
-    results.forEach(r => { if (r.status==='fulfilled'&&r.value) remoteItems.push(...r.value); });
+
+    if (indexData && indexData.items && Array.isArray(indexData.items)) {
+      // Use cached index (super fast, ~1 API call)
+      remoteItems = indexData.items.map(it => ({ ...it, _owner: it._owner || 'unknown' }));
+    } else {
+      // FALLBACK: Load from all branches (slow, for first time or if index is missing)
+      console.log('Index not found, loading from all branches...');
+      const branches = await ghGet(`/repos/${GH.owner}/${GH.repo}/branches`);
+      const userBranches = branches.filter(b => b.name !== mainBranch && b.name !== 'gh-pages');
+
+      const results = await Promise.allSettled(userBranches.map(async b => {
+        const files = await ghListDir(b.name, 'data');
+        const items = await Promise.allSettled(files.map(f => ghReadFile(b.name, 'data/'+f.name)));
+        return items.filter(r=>r.status==='fulfilled'&&r.value&&r.value.id)
+          .map(r => ({ ...r.value, _owner: b.name }));
+      }));
+
+      results.forEach(r => { if (r.status==='fulfilled'&&r.value) remoteItems.push(...r.value); });
+    }
 
     // Merge: keep local myItems that might not have synced yet
     if (currentUser && myItems.length) {
