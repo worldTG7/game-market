@@ -1600,6 +1600,20 @@ async function confirmDeleteItem(idx) {
 let currentMediaIndex=0, currentItem=null;
 
 function openDetailById(id, fromUserPage = false) {
+  // 如果从用户页打开，且已有道具页显示，先关闭旧的
+  if (fromUserPage && document.getElementById('modalOverlay').classList.contains('show')) {
+    // 直接关闭旧道具页，不触发 history.back()
+    document.getElementById('modalOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+    const v = document.querySelector('.modal-media video'); if (v) v.pause();
+    const idx = layerStack.lastIndexOf('modal');
+    if (idx !== -1) {
+      layerStack.splice(idx, 1);
+      _skipNextPopstate = true;
+      history.back();
+    }
+  }
+
   currentItem = allItems.find(it => it.id === id) || myItems.find(it => it.id === id);
   if (!currentItem) { showToast('道具不存在','error'); return; }
   currentMediaIndex = 0;
