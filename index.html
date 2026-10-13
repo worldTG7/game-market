@@ -356,7 +356,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-time{font-size:.62rem;color:var(--muted);margin-top:4px}
 .tag.user{cursor:pointer;transition:all .2s}
 .tag.user:hover{background:rgba(78,205,196,.25);border-color:var(--teal)}
-.card-delete{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all .2s}
+.card-delete{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.15);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all .2s}
+.card-delete svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .card-delete:hover{background:var(--danger);border-color:var(--danger)}
 .card{position:relative}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
@@ -1419,7 +1420,7 @@ function bindSearchMine() {
         filtered.forEach(it => {
           const th = renderCardThumb(it);
           html += `<div class="card" onclick="openDetailById('${esc(it.id)}', true)">
-            <button class="card-delete" onclick="event.stopPropagation();deleteMyItem('${esc(it.id)}')" title="删除">×</button>
+            <button class="card-delete" onclick="event.stopPropagation();deleteMyItem('${esc(it.id)}')" title="删除"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
             ${th}
             <div class="card-body">
               <div class="card-title">${esc(it.title)}</div>
@@ -1633,7 +1634,7 @@ function renderCardGrid(items, gridId, opts = {}) {
   items.forEach(it => {
     const th = renderCardThumb(it);
     h += `<div class="card" onclick="openDetailById('${esc(it.id)}'${opts.fromUserPage ? ', true' : ''})">
-      ${opts.showDelete ? `<button class="card-delete" onclick="event.stopPropagation();deleteMyItem('${esc(it.id)}')" title="删除">×</button>` : ''}
+      ${opts.showDelete ? `<button class="card-delete" onclick="event.stopPropagation();deleteMyItem('${esc(it.id)}')" title="删除"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>` : ''}
       ${th}
       <div class="card-body">
         <div class="card-title">${esc(it.title)}</div>
@@ -1824,7 +1825,7 @@ function renderMinePanel() {
     display.forEach(it => {
       const th = renderCardThumb(it);
       h += `<div class="card" onclick="openDetailById('${esc(it.id)}', true)">
-        <button class="card-delete" onclick="event.stopPropagation();deleteMyItem('${esc(it.id)}')" title="删除">×</button>
+        <button class="card-delete" onclick="event.stopPropagation();deleteMyItem('${esc(it.id)}')" title="删除"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></button>
         ${th}
         <div class="card-body">
           <div class="card-title">${esc(it.title)}</div>
@@ -1853,14 +1854,19 @@ function renderMinePanel() {
 async function deleteMyItem(itemId) {
   if (!currentUser) { showToast('请先登录','error'); return; }
   if (!(await validateSession())) return;
-  if (!confirm('确定删除此道具？')) return;
+
   const item = myItems.find(it => it.id === itemId) || allItems.find(it => it.id === itemId);
   if (!item) { showToast('道具不存在','error'); return; }
-  showToast('⏳ 正在删除...','success');
+
+  // 显示确认对话框
+  if (!confirm(`确定要删除此道具吗？\n\n删除操作将在1-3分钟内生效，在此期间道具将不再显示。`)) return;
+
+  showToast('⏳ 正在删除道具，预计1-3分钟生效...','info');
   item._deleted = true;
+
   try {
     await saveItem(item);
-    showToast('✅ 已删除','success');
+    showToast('✅ 删除成功，预计1-3分钟后完全生效','success');
     renderMinePanel();
     await loadAllItems();
   } catch(e) {
