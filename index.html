@@ -2335,18 +2335,18 @@ render();
   updateUploadPanel();
   renderEveryonePanel();
 
-  // Load all items from GitHub (background)
-  await loadAllItems().catch(e => console.warn('Background load failed:', e));
-
-  // Sync index to main branch (ensure index.json reflects current state)
-  await updateMainIndex().catch(e => console.warn('Index sync failed:', e));
-
-  // 立即淡出加载界面
+  // 立即淡出加载界面（UI已准备好，不要等数据加载）
   const ls = document.getElementById('loadingScreen');
   if (ls) {
     ls.classList.add('fade-out');
     setTimeout(() => ls.remove(), 300);
   }
+
+  // Load all items from GitHub (background, non-blocking)
+  loadAllItems().catch(e => console.warn('Background load failed:', e));
+
+  // Sync index to main branch (background, non-blocking)
+  updateMainIndex().catch(e => console.warn('Index sync failed:', e));
 
   // Handle URL parameters to set initial view
   if (itemParam) {
