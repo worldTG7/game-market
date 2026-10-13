@@ -1072,8 +1072,7 @@ function switchTab(tab) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   const panelMap = { everyone: 'panelEveryone', mine: 'panelMine', upload: 'panelUpload' };
   document.getElementById(panelMap[tab]).classList.add('active');
-  const subMap = { everyone: '浏览所有道具', mine: '我的道具', upload: '上传道具 · 一键分享' };
-  document.getElementById('headerSub').textContent = subMap[tab];
+  document.getElementById('headerSub').textContent = '免费分享，请勿上传隐私信息';
   if (tab==='everyone') { loadAllItems(); }
   if (tab==='mine') { loadMyItems(); }
   if (tab==='upload') { updateUploadPanel(); }
