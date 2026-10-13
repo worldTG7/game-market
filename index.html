@@ -164,7 +164,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 /* ===== TOAST ===== */
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:999;padding:12px 24px;border-radius:12px;background:var(--surface2);color:var(--text);font-size:.85rem;font-weight:500;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.4);transition:transform .3s ease;white-space:nowrap}
 .toast.show{transform:translateX(-50%) translateY(0)}
-.toast.success{border-color:var(--success)}.toast.error{border-color:var(--danger)}
+.toast.success{border-color:var(--success)}.toast.error{border-color:var(--danger)}.toast.warning{border-color:#f39c12;background:#f39c12}
 
 /* ===== MY ITEMS LIST ===== */
 .my-items{margin-top:20px}
@@ -212,8 +212,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <!-- 看大家 -->
   <section class="panel" id="panelEveryone">
     <div id="userPageHeader" style="display:none"></div>
-    <div id="everyoneContent"><div class="card-grid"><div class="card" onclick="openDetailById('item_1791858351058')">
-      <img class="card-thumb" src="https://raw.githubusercontent.com/worldTG7/game-market/test/media/item_1791858351058_0.png" loading="lazy">
+    <div id="everyoneContent"><div class="card-grid"><div class="card" onclick="openDetailById('item_1791858715887')">
+      <img class="card-thumb" src="https://raw.githubusercontent.com/worldTG7/game-market/test/media/item_1791858715887_0.png" loading="lazy">
       <div class="card-body">
         <div class="card-title">123</div>
         <div class="card-price">123</div>
@@ -222,15 +222,15 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
           
           <span class="tag user" onclick="event.stopPropagation();viewUserPage('test')">test</span>
         </div>
-        <div class="card-time">2026-10-13 10:25</div>
+        <div class="card-time">2026-10-13 10:32</div>
       </div>
     </div></div></div>
   </section>
 
   <!-- 我的 -->
-  <section class="panel active" id="panelMine"><div id="mineContent"><div style="display:flex;justify-content:flex-end;padding:12px 16px 0"><button class="share-header-btn" onclick="openDeployModal('user',toBranchName(currentUser.username))"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>分享主页</button></div><div class="card-grid"><div class="card" onclick="openDetailById('item_1791858351058')">
-      <button class="card-delete" onclick="event.stopPropagation();deleteMyItem('item_1791858351058')" title="删除">×</button>
-      <img class="card-thumb" src="https://raw.githubusercontent.com/worldTG7/game-market/test/media/item_1791858351058_0.png" loading="lazy">
+  <section class="panel active" id="panelMine"><div id="mineContent"><div style="display:flex;justify-content:flex-end;padding:12px 16px 0"><button class="share-header-btn" onclick="openDeployModal('user',toBranchName(currentUser.username))"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>分享主页</button></div><div class="card-grid"><div class="card" onclick="openDetailById('item_1791858715887')">
+      <button class="card-delete" onclick="event.stopPropagation();deleteMyItem('item_1791858715887')" title="删除">×</button>
+      <img class="card-thumb" src="https://raw.githubusercontent.com/worldTG7/game-market/test/media/item_1791858715887_0.png" loading="lazy">
       <div class="card-body">
         <div class="card-title">123</div>
         <div class="card-price">123</div>
@@ -238,7 +238,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
           
           
         </div>
-        <div class="card-time">2026-10-13 10:25</div>
+        <div class="card-time">2026-10-13 10:32</div>
       </div>
     </div></div></div></section>
 
@@ -274,7 +274,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
       <!-- My items list -->
       <div class="my-items" id="myItemsList"><div style="font-size:.78rem;font-weight:600;color:var(--text2);margin-bottom:10px">📦 我已发布的道具</div><div class="my-item-row">
-      <img class="my-item-thumb" src="https://raw.githubusercontent.com/worldTG7/game-market/test/media/item_1791858351058_0.png">
+      <img class="my-item-thumb" src="https://raw.githubusercontent.com/worldTG7/game-market/test/media/item_1791858715887_0.png">
       <div class="my-item-info"><div class="my-item-title">123</div><div class="my-item-price">¥123</div></div>
       <button class="my-item-del" onclick="confirmDeleteItem(0)">删除</button>
     </div></div>
@@ -1184,6 +1184,9 @@ async function publishItem() {
     progressFill.style.width = '100%';
     setTimeout(() => progressEl.classList.remove('show'), 1500);
 
+    // Show delay notice
+    showToast('⚠️ GitHub 缓存延迟 1-3 分钟，请耐心等待', 'warning');
+
   } catch(e) {
     progressText.textContent = '上传失败: ' + e.message;
     progressFill.style.width = '100%';
@@ -1216,7 +1219,7 @@ async function publishItem() {
   try {
     await saveItem(item);
     renderMyItems();
-    showToast('✅ 发布成功！','success');
+    showToast('✅ 发布成功！数据同步需要1-3分钟','success');
     await loadAllItems();
   } catch(e) {
     showToast('保存失败: '+e.message,'error');
@@ -1317,9 +1320,11 @@ async function deployToGitHub() {
     }
     setStep(2,'done','仓库已就绪');
 
-    // Step 3: Upload HTML to main branch
+    // Step 3: Always update HTML to main branch to ensure latest version
     setStep(3,'active','更新应用代码...');
-    // Temporarily remove deploy modal from DOM before capturing HTML
+    const defaultBranch = await ghDefaultBranch();
+
+    // Remove deploy modal from DOM before capturing HTML
     const deployOverlay = document.getElementById('deployModalOverlay');
     const deployParent = deployOverlay.parentNode;
     const deployNext = deployOverlay.nextSibling;
@@ -1327,15 +1332,13 @@ async function deployToGitHub() {
 
     let rawHtml = document.documentElement.outerHTML;
 
-    // Restore deploy modal to DOM
+    // Restore deploy modal
     if (deployNext) {
       deployParent.insertBefore(deployOverlay, deployNext);
     } else {
       deployParent.appendChild(deployOverlay);
     }
 
-    // Upload to main branch
-    const defaultBranch = await ghDefaultBranch();
     const blob = await ghPost(`/repos/${GH.owner}/${GH.repo}/git/blobs`, {
       content: rawHtml, encoding: 'utf-8'
     });
@@ -1367,10 +1370,10 @@ async function deployToGitHub() {
 
     setStep(3,'done','应用代码已更新');
 
-    // Step 4: Enable Pages from main branch
-    setStep(4,'active','启用 GitHub Pages...');
+    // Step 4: Enable Pages from main branch (if not already enabled)
+    setStep(4,'active','检查 GitHub Pages...');
     await ghEnablePagesFromMain();
-    setStep(4,'done','GitHub Pages 已启用');
+    setStep(4,'done','GitHub Pages 已就绪');
 
     // Step 5: Generate link
     setStep(5,'active','生成链接...');
@@ -1491,75 +1494,29 @@ render();
 // INIT
 // ================================================================
 (async function init() {
-  // Check if this is a deployed share page (via URL params on GitHub Pages domain)
+  // Check URL parameters for initial view
   const urlParams = new URLSearchParams(window.location.search);
   const itemParam = urlParams.get('item');
   const userParam = urlParams.get('user');
-  const isDeployedPage = window.location.hostname.includes('github.io') || itemParam || userParam;
 
-  if (isDeployedPage) {
-    // Deployed share page - hide tabs and show specific content
-    isGuest = true;
-    updateHeader();
-    updateUploadPanel();
-
-    // Hide tabs on deployed pages
-    document.querySelector('.tab-bar').style.display = 'none';
-
-    // Load all items first
-    await loadAllItems();
-
-    if (itemParam) {
-      // Single item mode - show detail modal directly
-      document.getElementById('panelEveryone').classList.add('active');
-      document.getElementById('panelMine').classList.remove('active');
-      document.getElementById('panelUpload').classList.remove('active');
-      renderEveryonePanel();
-      setTimeout(() => openDetailById(itemParam), 300);
-    } else if (userParam) {
-      // User homepage mode - show their items
-      document.getElementById('panelEveryone').classList.add('active');
-      document.getElementById('panelMine').classList.remove('active');
-      document.getElementById('panelUpload').classList.remove('active');
-      viewUserPage(toBranchName(userParam));
-    } else {
-      // Default: show all items
-      document.getElementById('panelEveryone').classList.add('active');
-      document.getElementById('panelMine').classList.remove('active');
-      document.getElementById('panelUpload').classList.remove('active');
-      renderEveryonePanel();
-    }
-
-    // Check saved session (but don't restore UI state on deployed pages)
-    const saved = sessionStorage.getItem(SESSION_KEY);
-    if (saved) {
-      try {
-        const branch = toBranchName(saved);
-        const exists = await ghBranchExists(branch);
-        if (exists) {
-          const raw = await ghReadRaw(branch, '.ttt');
-          if (raw) {
-            currentUser = { username: saved };
-            isGuest = false;
-            sessionStorage.setItem(SESSION_KEY, saved);
-            updateHeader();
-            updateUploadPanel();
-            await loadMyItems();
-          }
-        }
-      } catch(e) { console.warn('Auto-login failed:', e); }
-    }
-    return;
-  }
-
-  // Normal app (local file or direct access): start as guest
+  // Start as guest (all pages have full functionality)
   isGuest = true;
   updateHeader();
   updateUploadPanel();
   renderEveryonePanel();
 
   // Load all items from GitHub (background)
-  loadAllItems().catch(e => console.warn('Background load failed:', e));
+  await loadAllItems().catch(e => console.warn('Background load failed:', e));
+
+  // Handle URL parameters to set initial view
+  if (itemParam) {
+    // Single item mode - show detail modal directly
+    setTimeout(() => openDetailById(itemParam), 300);
+  } else if (userParam) {
+    // User homepage mode - switch to everyone tab and show their items
+    switchTab('everyone');
+    viewUserPage(toBranchName(userParam));
+  }
 
   // Check saved session and validate
   const saved = sessionStorage.getItem(SESSION_KEY);
