@@ -470,6 +470,15 @@ async function ghCreateBranch(name) {
   const def = await ghDefaultBranch();
   const data = await ghGet(`/repos/${GH.owner}/${GH.repo}/branches/${encodeURIComponent(def)}`);
   await ghPost(`/repos/${GH.owner}/${GH.repo}/git/refs`,{ref:'refs/heads/'+name, sha:data.commit.sha});
+
+  // Remove index.html from user branches (they should only contain user data)
+  if (name !== 'gh-pages' && name !== def) {
+    try {
+      await ghDeleteFile(name, 'index.html', '清理: 用户分支不包含HTML');
+    } catch(e) {
+      console.warn('Failed to cleanup index.html from branch:', name);
+    }
+  }
 }
 async function ghReadFile(branch, path) {
   try {
@@ -1090,18 +1099,51 @@ uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('dragove
 uploadZone.addEventListener('drop',e=>{e.preventDefault();uploadZone.classList.remove('dragover');handleFileList(e.dataTransfer.files);});
 function handleFiles(e){handleFileList(e.target.files);}
 function handleFileList(files){
-  Array.from(files).forEach(file=>{
+  const progressEl = document.getElementById('uploadProgress');
+  const progressText = document.getElementById('uploadProgressText');
+  const progressFill = document.getElementById('uploadProgressFill');
+
+  Array.from(files).forEach((file, idx)=>{
     if(file.size>50*1024*1024){showToast(file.name+' 超过50MB','error');return;}
     const isVideo=file.type.startsWith('video/');
+
+    // Show loading progress while reading file
+    progressEl.classList.add('show');
+    progressText.textContent = `正在加载 ${file.name}（${(file.size/1024/1024).toFixed(1)}MB）...`;
+    progressFill.style.width = '0%';
+    progressFill.style.transition = 'none';
+    // Simulate progress during file reading
+    let fakeProgress = 0;
+    const progressTimer = setInterval(() => {
+      fakeProgress = Math.min(fakeProgress + 2, 90);
+      progressFill.style.transition = 'width .3s ease';
+      progressFill.style.width = fakeProgress + '%';
+    }, 100);
+
     const reader=new FileReader();
     reader.onload=function(e){
+      clearInterval(progressTimer);
+      progressFill.style.width = '100%';
+
       uploadedMedia.push({
         type:isVideo?'video':'image',
-        file:file,  // Keep File object for upload
-        preview:e.target.result,  // For preview only
+        file:file,
+        preview:e.target.result,
         name:file.name
       });
       renderUploadPreviews();
+
+      // Hide progress after short delay
+      setTimeout(() => {
+        if (idx === files.length - 1) {
+          progressEl.classList.remove('show');
+        }
+      }, 400);
+    };
+    reader.onerror = function() {
+      clearInterval(progressTimer);
+      progressEl.classList.remove('show');
+      showToast('文件读取失败: ' + file.name, 'error');
     };
     reader.readAsDataURL(file);
   });
@@ -1172,30 +1214,25 @@ async function publishItem() {
         }
 
         if (m.type === 'video') {
-          // Step 1: Generate thumbnail
+          // Step 1: Generate ultra-compressed thumbnail (320px, 45% quality)
           progressText.textContent = `正在生成封面 ${i + 1}/${totalFiles}: ${m.name}`;
           progressFill.style.width = Math.round(((i + 0.1) / totalFiles) * 100) + '%';
           thumbnail = await generateVideoThumbnail(m.preview);
           if (thumbnail) {
             const thumbFilename = `${itemId}_${i}_thumb.jpg`;
-
-            // Step 2: Upload thumbnail
             progressText.textContent = `正在上传封面 ${i + 1}/${totalFiles}: ${m.name}`;
             progressFill.style.width = Math.round(((i + 0.3) / totalFiles) * 100) + '%';
             const thumbBase64 = thumbnail.split(',')[1];
             await ghWriteBinaryFile(branch, 'media/'+thumbFilename, thumbBase64, '上传封面: '+thumbFilename);
             thumbnail = getMediaUrl(branch, thumbFilename);
-            compressedUrl = thumbnail;
+            compressedUrl = thumbnail; // Use thumbnail for instant display
           }
 
-          // Step 3: Upload original video
+          // Step 2: Upload original video (backup only)
           progressText.textContent = `正在上传视频 ${i + 1}/${totalFiles}: ${m.name}`;
           progressFill.style.width = Math.round(((i + 0.5) / totalFiles) * 100) + '%';
           const base64 = await fileToBase64(m.file);
           const base64Content = base64.split(',')[1];
-
-          progressText.textContent = `正在保存视频 ${i + 1}/${totalFiles}: ${m.name}`;
-          progressFill.style.width = Math.round(((i + 0.7) / totalFiles) * 100) + '%';
           await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传视频: '+filename);
           progressFill.style.width = Math.round(((i + 0.9) / totalFiles) * 100) + '%';
         }
@@ -1271,7 +1308,7 @@ function fileToBase64(file) {
   });
 }
 
-// Generate video thumbnail from first frame
+// Generate compressed video thumbnail
 function generateVideoThumbnail(videoUrl) {
   return new Promise((resolve) => {
     const video = document.createElement('video');
@@ -1280,17 +1317,26 @@ function generateVideoThumbnail(videoUrl) {
     video.playsInline = true;
 
     video.addEventListener('loadeddata', () => {
-      video.currentTime = 0.1; // Seek to 0.1s to avoid black frame
+      video.currentTime = 0.1;
     });
 
     video.addEventListener('seeked', () => {
+      // Extreme compression: 320px width, low quality
+      const maxWidth = 320;
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+      if (width > maxWidth) {
+        height = Math.round(height * maxWidth / width);
+        width = maxWidth;
+      }
+
       const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas.width = width;
+      canvas.height = height;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, width, height);
       try {
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.45);
         resolve(dataUrl);
       } catch(e) {
         console.warn('Thumbnail generation failed:', e);
@@ -1307,8 +1353,77 @@ function generateVideoThumbnail(videoUrl) {
   });
 }
 
-// Compress image using Canvas
-function compressImage(file, maxWidth = 1200, quality = 0.82) {
+// Compress video using MediaRecorder (if supported)
+async function compressVideo(file, maxWidth = 480, bitrate = 300000) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const video = document.createElement('video');
+      video.muted = true;
+      video.playsInline = true;
+      video.src = URL.createObjectURL(file);
+
+      await new Promise((res, rej) => {
+        video.onloadedmetadata = res;
+        video.onerror = rej;
+      });
+
+      // Calculate new dimensions
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+      if (width > maxWidth) {
+        height = Math.round(height * maxWidth / width);
+        width = maxWidth;
+      }
+
+      // Create canvas for re-encoding
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+
+      const stream = canvas.captureStream(30); // 30fps
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: bitrate
+      });
+
+      const chunks = [];
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        URL.revokeObjectURL(video.src);
+        resolve(blob);
+      };
+
+      video.ontimeupdate = () => {
+        ctx.drawImage(video, 0, 0, width, height);
+      };
+
+      video.onended = () => {
+        recorder.stop();
+      };
+
+      recorder.start();
+      video.currentTime = 0;
+      await video.play();
+
+      // Seek through video to trigger drawing
+      const duration = video.duration;
+      const step = 1/30;
+      for (let t = 0; t <= duration; t += step) {
+        await new Promise(res => setTimeout(res, 10));
+      }
+      video.pause();
+      video.onended();
+    } catch(e) {
+      console.warn('Video compression failed, using original:', e);
+      resolve(file);
+    }
+  });
+}
+
+// Extreme image compression for fast loading
+function compressImage(file, maxWidth = 600, quality = 0.55) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
