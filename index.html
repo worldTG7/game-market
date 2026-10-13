@@ -36,6 +36,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .share-header-btn:active{transform:translateY(0);box-shadow:0 2px 6px rgba(78,205,196,.2)}
 .share-header-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;margin-right:5px;vertical-align:-3px}
 @media(max-width:380px){.share-header-btn{padding:6px 12px;font-size:.75rem;right:62px}.share-header-btn svg{width:14px;height:14px;margin-right:4px}}
+.header-share-btn{padding:7px 16px;border-radius:20px;border:1px solid var(--teal);background:transparent;color:var(--teal);font-size:.75rem;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:all .2s;white-space:nowrap}
+.header-share-btn:hover{background:var(--teal);color:#fff}
 .logout-btn{padding:7px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.72rem;font-family:var(--font-body);cursor:pointer;transition:all .2s}
 .logout-btn:hover{border-color:var(--danger);color:var(--danger)}
 
@@ -257,6 +259,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <div class="header-sub" id="headerSub"></div>
     </div>
     <div class="header-right" id="headerRight">
+      <button class="header-share-btn" id="headerShareBtn" style="display:none" onclick="shareMainPage()">分享</button>
       <button class="auth-btn" id="authBtnHeader" onclick="openLogin()">登录 / 注册</button>
     </div>
   </header>
@@ -758,11 +761,23 @@ function doLogout() {
 
 function updateHeader() {
   const r = document.getElementById('headerRight');
+  const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab;
+  const showShare = activeTab === 'mine' && currentUser;
+
   if (currentUser) {
-    r.innerHTML = `<span class="user-chip">👤 ${esc(currentUser.username)}</span><button class="logout-btn" onclick="doLogout()">退出</button>`;
+    r.innerHTML = `<span class="user-chip">👤 ${esc(currentUser.username)}</span>${showShare ? '<button class="header-share-btn" onclick="shareMainPage()">分享</button>' : ''}<button class="logout-btn" onclick="doLogout()">退出</button>`;
   } else {
     r.innerHTML = `<button class="auth-btn" onclick="openLogin()">登录 / 注册</button>`;
   }
+}
+
+function shareMainPage() {
+  if (!currentUser) {
+    showToast('请先登录','error');
+    return;
+  }
+  const branchName = toBranchName(currentUser.username);
+  openDeployModal('user', branchName);
 }
 
 // ================================================================
@@ -1112,6 +1127,7 @@ function switchTab(tab) {
   const panelMap = { everyone: 'panelEveryone', mine: 'panelMine', upload: 'panelUpload' };
   document.getElementById(panelMap[tab]).classList.add('active');
   document.getElementById('headerSub').textContent = '免费分享，请勿上传隐私信息';
+  updateHeader(); // 更新分享按钮显示状态
   if (tab==='everyone') { loadAllItems(); }
   if (tab==='mine') { loadMyItems(); }
   if (tab==='upload') { updateUploadPanel(); }
