@@ -1123,7 +1123,7 @@ async function loadAllItems() {
 
       const results = await Promise.allSettled(userBranches.map(async b => {
         const files = await ghListDir(b.name, 'data');
-        const items = await Promise.allSettled(files.map(f => ghReadFile(b.name, 'data/'+f.name)));
+        const items = await Promise.allSettled(files.map(f => ghReadFileDirect(b.name, 'data/'+f.name)));
         return items.filter(r=>r.status==='fulfilled'&&r.value&&r.value.id)
           .map(r => ({ ...r.value, _owner: b.name }));
       }));
