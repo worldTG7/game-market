@@ -66,6 +66,18 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .empty-state svg{width:64px;height:64px;stroke:var(--border);fill:none;stroke-width:1.2;margin-bottom:16px}
 .empty-state p{font-size:.9rem;line-height:1.6}
 
+/* ===== UPLOAD PROGRESS ===== */
+.upload-progress{display:none;margin:16px 0;padding:16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)}
+.upload-progress.show{display:block}
+.upload-progress-text{font-size:.85rem;color:var(--text2);margin-bottom:8px}
+.upload-progress-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.upload-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#ff9a5c);border-radius:3px;transition:width .3s ease;width:0%}
+
+.video-badge{position:absolute;top:6px;right:6px;background:rgba(255,107,53,.85);color:#fff;font-size:.55rem;padding:2px 6px;border-radius:4px;font-weight:600;letter-spacing:.03em}
+.card-thumb-video-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.card-thumb-video-icon::after{content:'';width:44px;height:44px;background:rgba(0,0,0,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;clip-path:polygon(30% 20%,30% 80%,80% 50%)}
+.card-thumb-wrapper{position:relative;width:100%;aspect-ratio:4/3}
+
 /* ===== DETAIL MODAL ===== */
 .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center}
 .modal-overlay.show{display:flex}
@@ -204,11 +216,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <!-- 看大家 -->
   <section class="panel active" id="panelEveryone">
     <div id="userPageHeader" style="display:none"></div>
-    <div id="everyoneContent"></div>
+    <div id="everyoneContent"><div class="empty-state"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 00-8 0v2"/></svg><p>暂无道具上架<br>点击右上角「登录/注册」发布你的道具</p></div></div>
   </section>
 
   <!-- 我的 -->
-  <section class="panel" id="panelMine"><div id="mineContent"></div></section>
+  <section class="panel" id="panelMine"><div id="mineContent"><div class="empty-state"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><p>请先登录查看你的道具</p></div></div></section>
 
   <!-- 上传 -->
   <section class="panel" id="panelUpload">
@@ -228,6 +240,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <p>点击或拖拽上传图片/视频<br><span style="font-size:.7rem">支持 JPG PNG MP4，单文件 ≤ 50MB</span></p>
           <input type="file" id="fileInput" multiple accept="image/*,video/mp4,video/quicktime">
+        </div>
+        <div class="upload-progress" id="uploadProgress">
+          <div class="upload-progress-text" id="uploadProgressText">准备上传...</div>
+          <div class="upload-progress-bar"><div class="upload-progress-fill" id="uploadProgressFill"></div></div>
         </div>
         <div class="upload-previews" id="uploadPreviews"></div>
       </div>
@@ -365,6 +381,47 @@ function showToast(msg, type) {
   clearTimeout(t._timer); t._timer=setTimeout(()=>t.className='toast',3000);
 }
 
+// Get media display URL (supports both new url-based and old base64 data format)
+function getMediaSrc(media) {
+  if (!media) return '';
+  // New format: {type, filename, url}
+  if (media.url) return media.url;
+  // Old format: {type, data, name} (base64 embedded)
+  if (media.data) return media.data;
+  return '';
+}
+
+// Render card thumbnail (uses thumbnail for videos)
+function renderCardThumb(item) {
+  if (!item.media || !item.media.length) {
+    return `<div class="card-thumb-placeholder">🎮</div>`;
+  }
+  const m = item.media[0];
+  if (m.type === 'video') {
+    // Use thumbnail if available, otherwise show video badge overlay
+    const thumbSrc = m.thumbnail || getMediaSrc(m);
+    return `<div class="card-thumb-wrapper">
+      <img class="card-thumb" src="${thumbSrc}" loading="lazy">
+      <div class="card-thumb-video-icon"></div>
+      <span class="video-badge">VIDEO</span>
+    </div>`;
+  }
+  return `<img class="card-thumb" src="${getMediaSrc(m)}" loading="lazy">`;
+}
+
+// Render my-item thumbnail
+function renderMyItemThumb(item) {
+  if (!item.media || !item.media.length) {
+    return `<div class="my-item-thumb-ph">🎮</div>`;
+  }
+  const m = item.media[0];
+  if (m.type === 'video') {
+    const thumbSrc = m.thumbnail || getMediaSrc(m);
+    return `<img class="my-item-thumb" src="${thumbSrc}">`;
+  }
+  return `<img class="my-item-thumb" src="${getMediaSrc(m)}">`;
+}
+
 // ================================================================
 // GITHUB API
 // ================================================================
@@ -376,6 +433,23 @@ async function ghFetch(path, opts={}) {
 async function ghGet(path) { return (await ghFetch(path)).json(); }
 async function ghPut(path, body) { return (await ghFetch(path,{method:'PUT',body:JSON.stringify(body)})).json(); }
 async function ghPost(path, body) { return (await ghFetch(path,{method:'POST',body:JSON.stringify(body)})).json(); }
+
+// Get media file URL from GitHub raw content
+function getMediaUrl(branch, filename) {
+  return `https://raw.githubusercontent.com/${GH.owner}/${GH.repo}/${branch}/media/${filename}`;
+}
+
+// Write binary file to GitHub (for media files)
+async function ghWriteBinaryFile(branch, path, base64Content, msg) {
+  let sha = null;
+  try {
+    const d = await ghGet(`/repos/${GH.owner}/${GH.repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`);
+    sha = d.sha;
+  } catch {}
+  const body = { message:msg, content:base64Content, branch };
+  if (sha) body.sha = sha;
+  return ghPut(`/repos/${GH.owner}/${GH.repo}/contents/${encodeURIComponent(path)}`, body);
+}
 
 async function ghEnsureRepo() {
   try { await ghGet(`/repos/${GH.owner}/${GH.repo}`); }
@@ -700,7 +774,16 @@ async function saveItem(item) {
 async function deleteItemData(item) {
   if (!currentUser) return;
   const branch = toBranchName(currentUser.username);
+  // Delete JSON data file
   await ghDeleteFile(branch, 'data/'+item.id+'.json', '删除道具: '+item.title);
+  // Delete associated media files
+  if (item.media && item.media.length) {
+    for (const media of item.media) {
+      if (media.filename) {
+        await ghDeleteFile(branch, 'media/'+media.filename, '删除媒体: '+media.filename);
+      }
+    }
+  }
 }
 
 async function loadAllItems() {
@@ -767,9 +850,7 @@ function renderEveryonePanel() {
   }
   let h = '<div class="card-grid">';
   display.forEach(it => {
-    const th = it.media&&it.media.length
-      ? (it.media[0].type==='image' ? `<img class="card-thumb" src="${it.media[0].data}" loading="lazy">` : `<video class="card-thumb" src="${it.media[0].data}" muted preload="metadata"></video>`)
-      : `<div class="card-thumb-placeholder">🎮</div>`;
+    const th = renderCardThumb(it);
     h += `<div class="card" onclick="openDetailById('${esc(it.id)}')">
       ${th}
       <div class="card-body">
@@ -800,11 +881,7 @@ function renderMinePanel() {
     return;
   }
   const display = (myItems.length ? myItems : allItems.filter(it => it._owner === toBranchName(currentUser.username))).filter(it => !it._deleted);
-  // Share homepage button at top
-  let h = `<div class="share-banner" onclick="openDeployModal('homepage')" style="cursor:pointer">
-    <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-    <p>点击生成我的主页分享链接<br><span style="color:var(--teal);font-weight:600">分享给好友，让更多人看到你的道具</span></p>
-  </div>`;
+  let h = '<div style="display:flex;justify-content:flex-end;padding:12px 16px 0"><button class="share-header-btn" onclick="openDeployModal(\'user\',toBranchName(currentUser.username))"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享主页</button></div>';
   if (!display.length) {
     h += `<div class="empty-state">
       <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -814,9 +891,7 @@ function renderMinePanel() {
   }
   h += '<div class="card-grid">';
   display.forEach(it => {
-    const th = it.media&&it.media.length
-      ? (it.media[0].type==='image' ? `<img class="card-thumb" src="${it.media[0].data}" loading="lazy">` : `<video class="card-thumb" src="${it.media[0].data}" muted preload="metadata"></video>`)
-      : `<div class="card-thumb-placeholder">🎮</div>`;
+    const th = renderCardThumb(it);
     h += `<div class="card" onclick="openDetailById('${esc(it.id)}')">
       <button class="card-delete" onclick="event.stopPropagation();deleteMyItem('${esc(it.id)}')" title="删除">×</button>
       ${th}
@@ -878,9 +953,7 @@ function viewUserPage(username) {
   }
   let h = '<div class="card-grid">';
   userItems.forEach(it => {
-    const th = it.media&&it.media.length
-      ? (it.media[0].type==='image' ? `<img class="card-thumb" src="${it.media[0].data}" loading="lazy">` : `<video class="card-thumb" src="${it.media[0].data}" muted preload="metadata"></video>`)
-      : `<div class="card-thumb-placeholder">🎮</div>`;
+    const th = renderCardThumb(it);
     h += `<div class="card" onclick="openDetailById('${esc(it.id)}')">
       ${th}
       <div class="card-body">
@@ -911,9 +984,7 @@ function renderMyItems() {
   if (!myItems.length) { el.innerHTML = ''; return; }
   let h = '<div style="font-size:.78rem;font-weight:600;color:var(--text2);margin-bottom:10px">📦 我已发布的道具</div>';
   myItems.forEach((it,i) => {
-    const th = it.media&&it.media.length
-      ? (it.media[0].type==='image' ? `<img class="my-item-thumb" src="${it.media[0].data}">` : `<div class="my-item-thumb-ph">🎬</div>`)
-      : `<div class="my-item-thumb-ph">🎮</div>`;
+    const th = renderMyItemThumb(it);
     h += `<div class="my-item-row">
       ${th}
       <div class="my-item-info"><div class="my-item-title">${esc(it.title)}</div><div class="my-item-price">¥${it.price}</div></div>
@@ -987,7 +1058,8 @@ function renderModalMedia() {
   const el=document.getElementById('modalMedia'), m=currentItem.media;
   if(!m||!m.length){el.innerHTML='<div style="color:var(--muted);font-size:3rem">🎮</div>';return;}
   const d=m[currentMediaIndex];
-  let h=d.type==='image'?`<img src="${d.data}" alt="">`:`<video src="${d.data}" controls playsinline></video>`;
+  const mediaSrc = getMediaSrc(d);
+  let h=d.type==='image'?`<img src="${mediaSrc}" alt="">`:`<video src="${mediaSrc}" controls autoplay playsinline></video>`;
   if(m.length>1){
     h+=`<button class="media-arrow left" onclick="navMedia(-1)">‹</button><button class="media-arrow right" onclick="navMedia(1)">›</button><div class="media-nav">`;
     m.forEach((_,i)=>{h+=`<button class="media-dot ${i===currentMediaIndex?'active':''}" onclick="goMedia(${i})"></button>`;});
@@ -1019,12 +1091,20 @@ function handleFileList(files){
     if(file.size>50*1024*1024){showToast(file.name+' 超过50MB','error');return;}
     const isVideo=file.type.startsWith('video/');
     const reader=new FileReader();
-    reader.onload=function(e){uploadedMedia.push({type:isVideo?'video':'image',data:e.target.result,name:file.name});renderUploadPreviews();};
+    reader.onload=function(e){
+      uploadedMedia.push({
+        type:isVideo?'video':'image',
+        file:file,  // Keep File object for upload
+        preview:e.target.result,  // For preview only
+        name:file.name
+      });
+      renderUploadPreviews();
+    };
     reader.readAsDataURL(file);
   });
 }
 function renderUploadPreviews(){
-  previewsEl.innerHTML=uploadedMedia.map((m,i)=>`<div class="upload-preview">${m.type==='image'?`<img src="${m.data}" alt="">`:`<video src="${m.data}" muted></video><span class="video-badge">VIDEO</span>`}<button class="remove-btn" onclick="removeMedia(${i})">✕</button></div>`).join('');
+  previewsEl.innerHTML=uploadedMedia.map((m,i)=>`<div class="upload-preview">${m.type==='image'?`<img src="${m.preview}" alt="">`:`<video src="${m.preview}" muted></video><span class="video-badge">VIDEO</span>`}<button class="remove-btn" onclick="removeMedia(${i})">✕</button></div>`).join('');
 }
 function removeMedia(i){uploadedMedia.splice(i,1);renderUploadPreviews();}
 
@@ -1039,16 +1119,152 @@ async function publishItem() {
   if(!title){showToast('请填写道具介绍','error');return;}
   if(isNaN(price)||price<0){showToast('请填写有效价格','error');return;}
 
-  const item={id:'item_'+Date.now(),title,price,category:'',game:'',desc:title,media:[...uploadedMedia],tags:[],time:new Date().toISOString()};
+  const itemId = 'item_'+Date.now();
+  const branch = toBranchName(currentUser.username);
+
+  // Show progress bar
+  const progressEl = document.getElementById('uploadProgress');
+  const progressText = document.getElementById('uploadProgressText');
+  const progressFill = document.getElementById('uploadProgressFill');
+  progressEl.classList.add('show');
+
+  // Upload media files separately
+  const mediaRefs = [];
+  const totalFiles = uploadedMedia.length;
+
+  try {
+    for (let i = 0; i < uploadedMedia.length; i++) {
+      const m = uploadedMedia[i];
+      if (m.file) {
+        const ext = m.name.split('.').pop().toLowerCase();
+        const filename = `${itemId}_${i}.${ext}`;
+
+        // Update progress
+        const progress = Math.round(((i + 0.5) / totalFiles) * 100);
+        progressText.textContent = `正在上传 ${i + 1}/${totalFiles}: ${m.name}`;
+        progressFill.style.width = progress + '%';
+
+        // Convert file to base64
+        const base64 = await fileToBase64(m.file);
+        // Remove data URL prefix (data:image/jpeg;base64,)
+        const base64Content = base64.split(',')[1];
+
+        await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传媒体: '+filename);
+
+        // For videos, generate thumbnail
+        let thumbnail = null;
+        if (m.type === 'video') {
+          progressText.textContent = `正在生成封面: ${m.name}`;
+          thumbnail = await generateVideoThumbnail(m.preview);
+          if (thumbnail) {
+            const thumbFilename = `${itemId}_${i}_thumb.jpg`;
+            const thumbBase64 = thumbnail.split(',')[1];
+            await ghWriteBinaryFile(branch, 'media/'+thumbFilename, thumbBase64, '上传封面: '+thumbFilename);
+            thumbnail = getMediaUrl(branch, thumbFilename);
+          }
+        }
+
+        mediaRefs.push({
+          type: m.type,
+          filename: filename,
+          url: getMediaUrl(branch, filename),
+          thumbnail: thumbnail
+        });
+
+        // Update progress to completed
+        const completedProgress = Math.round(((i + 1) / totalFiles) * 100);
+        progressFill.style.width = completedProgress + '%';
+      }
+    }
+
+    // Hide progress after upload
+    progressText.textContent = '媒体文件上传完成';
+    progressFill.style.width = '100%';
+    setTimeout(() => progressEl.classList.remove('show'), 1500);
+
+  } catch(e) {
+    progressText.textContent = '上传失败: ' + e.message;
+    progressFill.style.width = '100%';
+    progressFill.style.background = '#e74c3c';
+    showToast('❌ 媒体上传失败: ' + e.message, 'error');
+    setTimeout(() => {
+      progressEl.classList.remove('show');
+      progressFill.style.background = '';
+    }, 3000);
+    return;
+  }
+
+  // Create item with media references (not base64 data)
+  const item = {
+    id: itemId,
+    title,
+    price,
+    category:'',
+    game:'',
+    desc:title,
+    media: mediaRefs,
+    tags:[],
+    time: new Date().toISOString()
+  };
+
   myItems.unshift(item);
   resetForm();
-  showToast('⏳ 正在保存到云端...','success');
+  showToast('⏳ 正在保存道具信息...','success');
+
   try {
     await saveItem(item);
     renderMyItems();
     showToast('✅ 发布成功！','success');
     await loadAllItems();
-  } catch(e) { showToast('保存失败: '+e.message,'error'); }
+  } catch(e) {
+    showToast('保存失败: '+e.message,'error');
+  }
+}
+
+// Helper: convert File to base64 data URL
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Generate video thumbnail from first frame
+function generateVideoThumbnail(videoUrl) {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.playsInline = true;
+
+    video.addEventListener('loadeddata', () => {
+      video.currentTime = 0.1; // Seek to 0.1s to avoid black frame
+    });
+
+    video.addEventListener('seeked', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      try {
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        resolve(dataUrl);
+      } catch(e) {
+        console.warn('Thumbnail generation failed:', e);
+        resolve(null);
+      }
+    });
+
+    video.addEventListener('error', () => {
+      console.warn('Video load failed for thumbnail');
+      resolve(null);
+    });
+
+    video.src = videoUrl;
+  });
 }
 
 function resetForm(){
