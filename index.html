@@ -942,7 +942,8 @@ function updateHeader() {
   const r = document.getElementById('headerRight');
   const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab;
   const showShare = activeTab === 'mine' && currentUser;
-  const refreshBtn = `<button class="refresh-btn" id="refreshBtn" onclick="refreshAll()" title="刷新"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>`;
+  const showRefresh = activeTab === 'everyone';
+  const refreshBtn = showRefresh ? `<button class="refresh-btn" id="refreshBtn" onclick="refreshAll()" title="刷新"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>` : '';
 
   if (currentUser) {
     r.innerHTML = `${refreshBtn}${showShare ? '<button class="header-share-btn" onclick="shareMainPage()">分享</button>' : ''}<span class="user-chip">👤 ${esc(currentUser.username)}</span><button class="logout-btn" onclick="doLogout()">退出</button>`;
