@@ -1144,19 +1144,19 @@ async function loadAllItems() {
       remoteItems.push(...localOnly);
     }
 
-    // 从缓存中读取本地点赞数，优先使用本地值（防止 API 延迟导致覆盖）
+    // 从缓存中读取本地点赞数，使用较大的值（本地点赞可能尚未同步到远端）
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
         const cacheData = JSON.parse(cached);
-        const cacheMap = new Map(cacheData.items.map(it => [it.id, it.likes]));
+        const cacheMap = new Map(cacheData.items.map(it => [it.id, it.likes || 0]));
         remoteItems.forEach(it => {
           const localLikes = cacheMap.get(it.id);
           if (localLikes !== undefined && localLikes > (it.likes || 0)) {
             it.likes = localLikes;
           }
         });
-      } catch(e) { /* ignore cache parse errors */ }
+      } catch(e) { /* ignore */ }
     }
 
     remoteItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
@@ -2153,7 +2153,7 @@ function likeItem() {
   syncTimer = setTimeout(syncLikes, 2000);
 }
 
-// 同步点赞数到远程
+// 同步点赞数到远程（读取远端最新值 + 累加本地增量，避免覆盖冲突）
 async function syncLikes() {
   if (!currentItem || pendingLikes <= 0) {
     pendingLikes = 0;
@@ -2162,18 +2162,47 @@ async function syncLikes() {
 
   const likesToSync = pendingLikes;
   pendingLikes = 0;
+  const itemId = currentItem.id;
+  const ownerBranch = currentItem._owner;
+  if (!ownerBranch) return;
 
   try {
-    const ownerBranch = currentItem._owner;
-    if (!ownerBranch) return;
+    // 1. 从远端读取最新数据
+    const remoteData = await ghReadFile(ownerBranch, 'data/'+itemId+'.json');
+    if (!remoteData) { console.warn('远端道具不存在'); return; }
 
-    await ghWriteFile(ownerBranch, 'data/'+currentItem.id+'.json', currentItem, '点赞: '+currentItem.title);
-    console.log('✅ 点赞已同步到远端');
+    // 2. 累加本地增量到远端最新值
+    const remoteLikes = remoteData.likes || 0;
+    const newLikes = remoteLikes + likesToSync;
+    remoteData.likes = newLikes;
+
+    // 3. 写回远端
+    await ghWriteFile(ownerBranch, 'data/'+itemId+'.json', remoteData, '点赞+'+likesToSync+': '+remoteData.title);
+    console.log('✅ 点赞已同步: 远端'+remoteLikes+' + 本地'+likesToSync+' = '+newLikes);
+
+    // 4. 更新本地数据为远端最新值
+    currentItem.likes = newLikes;
+    const localItem = allItems.find(it => it.id === itemId);
+    if (localItem) localItem.likes = newLikes;
+
+    // 5. 更新本地缓存
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        const cachedItem = cacheData.items.find(it => it.id === itemId);
+        if (cachedItem) {
+          cachedItem.likes = newLikes;
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        }
+      }
+    } catch(e) { /* ignore */ }
 
     // 异步更新主索引
     updateMainIndex().catch(e => console.warn('Index update failed:', e));
   } catch(e) {
-    // 失败时不减少本地值，避免用户困惑
+    // 失败时把增量加回 pending，下次重试
+    pendingLikes += likesToSync;
     console.warn('Sync likes failed:', e.message);
   }
 }
