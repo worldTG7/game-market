@@ -1397,6 +1397,7 @@ function renderMinePanel() {
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
         </div>
         <div class="card-meta-row">
+          ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
       </div>
@@ -1482,6 +1483,7 @@ function viewUserPage(username, fromModal = false) {
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
         </div>
         <div class="card-meta-row">
+          ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
       </div>
