@@ -57,7 +57,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-body{padding:10px 12px 12px}
 .card-title{font-size:.85rem;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px}
 .card-price{font-family:var(--font-display);font-size:1.1rem;font-weight:800;color:var(--accent)}
-.card-price::before{content:'¥';font-size:.75rem;margin-right:1px}
+.card-price.rmb::before{content:'¥';font-size:.75rem;margin-right:1px}
+.card-price.gold{color:#f5c518}
+.card-price.gold::before{content:'';display:inline-block;width:14px;height:14px;background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA7ElEQVR42u2Xyw6CMBBF/XX7Bf6+/oF+gS6I8QsMxqWJiYkLI1EXJkZjYmLiQh+Nt6MgUAotU4YydM4CwtxO53ZmSAsZhmEYhmEYhmEYhmEYhmH+C5VKhXsYxvnQaDS4B8M4H1qtFvfgnA/tdpu1wDl/BFqtNmvBc/4I9Ho91oLn/BHo9/usBc/5IzAYDFgLnvNHYDQasRY854/AeDxmLXjOH4HJZMJa8Jw/Au12e+Hdd998880333zzzTfffPPNN998880333zzzTfffPPNN9988833/wXwE4vFkgvAOB/CMOTCPB6PuwDGOdHr9Vg7n893AYxzYjAYsHY6ne4CGOdEv99n7XK53AUwzolms8na9Xq9C2CcE6PRiLWbzeYugHFOzGYz1u73+7sAxjnR6XRYu9vt7gKY/48f1WqVF8M4H0KhEM9lHMd3AYxzot1usxa8549Ap9PhHgbnfOh2u9yDcz70ej3WDofDuwDGOTGfz1m72WzuApjnRKVSYS14zx+BarXKWvCePwKtVou14D1/BKbTKWvBe/4I9Ho91oLn/BHo9/usBc/5IzAYDFgLnvNHYDQasRY854/AaDRiLXjOH4HRaMRa8Jw/AtPplLXgPX8E2u02a8F7/gjM53PWguf8ERiNRqwF7/kj0G63WQve80dgOp2yFrznj0C73WYteM8fgel0ylrwnj8C7XabteA9fwTm8zlrmc/n3AMAMAzDMAzDMAzDMAzDMAzDnA+/ALuZc6P6g2VFAAAAAElFTkSuQmCC') no-repeat center/contain;vertical-align:-2px;margin-right:3px}
 .card-tags{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
 .tag{font-size:.6rem;padding:2px 7px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
 .tag.heat{background:rgba(255,107,53,.12);color:var(--accent);border-color:rgba(255,107,53,.25)}
@@ -104,7 +106,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .modal-info{padding:16px;flex-shrink:0;overflow:hidden}
 .modal-title{font-size:1.1rem;font-weight:700;line-height:1.4;margin-bottom:6px}
 .modal-price{font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:var(--accent);margin-bottom:10px}
-.modal-price::before{content:'¥';font-size:.9rem;margin-right:2px}
+.modal-price.rmb::before{content:'¥';font-size:.9rem;margin-right:2px}
+.modal-price.gold{color:#f5c518}
+.modal-price.gold::before{content:'';display:inline-block;width:20px;height:20px;background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA7ElEQVR42u2Xyw6CMBBF/XX7Bf6+/oF+gS6I8QsMxqWJiYkLI1EXJkZjYmLiQh+Nt6MgUAotU4YydM4CwtxO53ZmSAsZhmEYhmEYhmEYhmEYhmH+C5VKhXsYxvnQaDS4B8M4H1qtFvfgnA/tdpu1wDl/BFqtNmvBc/4I9Ho91oLn/BHo9/usBc/5IzAYDFgLnvNHYDQasRY854/AaDRiLXjOH4HRaMRa8Jw/ApPJhLXgOX8E2u02a8F7/gjM53PWguf8ERiNRqwF7/kj0G63WQve80dgOp2yFrznj0C73WYteM8fgel0ylrwnj8C7XabteA9fwTm8zlrmc/n3AMAMAzDMAzDMAzDMAzDMAzDnA+/ALuZc6P6g2VFAAAAAElFTkSuQmCC') no-repeat center/contain;vertical-align:-3px;margin-right:4px}
 .modal-desc{font-size:.82rem;line-height:1.6;color:var(--text2);white-space:pre-wrap;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .modal-meta{display:flex;flex-wrap:wrap;gap:6px;padding-top:12px;border-top:1px solid var(--border)}
 .meta-chip{font-size:.68rem;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text2);border:1px solid var(--border)}
@@ -263,7 +267,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     </div>
     <div id="uploadContent" style="display:none">
       <div class="form-section"><label class="form-label"><span class="req">*</span> 道具介绍</label><input class="form-input" id="fTitle" placeholder="输入介绍" maxlength="100"></div>
-      <div class="form-section"><label class="form-label"><span class="req">*</span> 价格（元）</label><input class="form-input" id="fPrice" type="number" min="0" step="1" placeholder="输入价格"></div>
+      <div class="form-section"><label class="form-label"><span class="req">*</span> 价格</label><div style="display:flex;gap:8px"><select class="form-select" id="fPriceType" style="width:100px;flex:none"><option value="rmb">¥ 人民币</option><option value="gold">🟨 黄金</option></select><input class="form-input" id="fPrice" type="number" min="0" step="1" placeholder="输入价格"></div></div>
       <div class="form-section"><label class="form-label">微信号</label><input class="form-input" id="fWechat" placeholder="选填，方便买家联系" maxlength="50"></div>
       <div class="form-section">
         <label class="form-label">图片 / 视频</label>
@@ -1178,7 +1182,7 @@ function renderEveryonePanel() {
       ${th}
       <div class="card-body">
         <div class="card-title">${esc(it.title)}</div>
-        <div class="card-price">${it.price}</div>
+        <div class="card-price ${it.priceType || 'rmb'}">${it.price}</div>
         <div class="card-tags">
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
@@ -1230,7 +1234,7 @@ function loadMoreItems() {
       ${th}
       <div class="card-body">
         <div class="card-title">${esc(it.title)}</div>
-        <div class="card-price">${it.price}</div>
+        <div class="card-price ${it.priceType || 'rmb'}">${it.price}</div>
         <div class="card-tags">
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
@@ -1304,7 +1308,7 @@ function renderMinePanel() {
       ${th}
       <div class="card-body">
         <div class="card-title">${esc(it.title)}</div>
-        <div class="card-price">${it.price}</div>
+        <div class="card-price ${it.priceType || 'rmb'}">${it.price}</div>
         <div class="card-tags">
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
@@ -1386,7 +1390,7 @@ function viewUserPage(username, fromModal = false) {
       ${th}
       <div class="card-body">
         <div class="card-title">${esc(it.title)}</div>
-        <div class="card-price">${it.price}</div>
+        <div class="card-price ${it.priceType || 'rmb'}">${it.price}</div>
         <div class="card-tags">
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
@@ -1448,7 +1452,7 @@ function renderMyItems() {
     const origIdx = myItems.indexOf(it);
     h += `<div class="my-item-row">
       ${th}
-      <div class="my-item-info"><div class="my-item-title">${esc(it.title)}</div><div class="my-item-price">¥${it.price}</div></div>
+      <div class="my-item-info"><div class="my-item-title">${esc(it.title)}</div><div class="my-item-price" style="color:${it.priceType === 'gold' ? '#f5c518' : 'var(--accent)'}">${it.priceType === 'gold' ? '🟨' : '¥'}${it.price}</div></div>
       <button class="my-item-del" onclick="confirmDeleteItem(${origIdx})">删除</button>
     </div>`;
   });
@@ -1502,7 +1506,7 @@ function openDetailById(id) {
 
   document.getElementById('modalInfo').innerHTML = `
     <div class="modal-title">${esc(currentItem.title)}</div>
-    <div class="modal-price">${currentItem.price}</div>
+    <div class="modal-price ${currentItem.priceType || 'rmb'}">${currentItem.price}</div>
     ${currentItem.time ? `<div class="post-time" style="font-size:.75rem;color:var(--text2);margin-bottom:4px">${formatTime(currentItem.time)}</div>` : ''}
     ${currentItem.wechat ? `<div style="font-size:.75rem;color:var(--text2);margin-bottom:12px">微信：${esc(currentItem.wechat)}</div>` : ''}
     <div class="modal-meta">
@@ -1817,10 +1821,12 @@ async function publishItem() {
 
   // Create item with media references (not base64 data)
   const wechat = document.getElementById('fWechat').value.trim() || '无';
+  const priceType = document.getElementById('fPriceType').value || 'rmb';
   const item = {
     id: itemId,
     title,
     price,
+    priceType,
     wechat,
     category:'',
     game:'',
