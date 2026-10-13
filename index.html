@@ -1643,13 +1643,15 @@ function openDetailById(id, fromUserPage = false) {
   }
 
   document.getElementById('modalInfo').innerHTML = `
-    <div class="modal-title">${esc(currentItem.title)}</div>
-    <div style="display:flex;align-items:center;gap:12px;margin:8px 0">
-      <div class="modal-price ${currentItem.priceType || 'rmb'}"><span class="price-num">${currentItem.price}</span></div>
-      <button class="like-btn" onclick="likeItem()">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div class="modal-title">${esc(currentItem.title)}</div>
+      <button class="like-btn" onclick="likeItem()" style="flex-shrink:0">
         <span class="like-icon">👍</span>
         <span class="like-count">${currentItem.likes || 0}</span>
       </button>
+    </div>
+    <div style="margin:8px 0">
+      <div class="modal-price ${currentItem.priceType || 'rmb'}"><span class="price-num">${currentItem.price}</span></div>
     </div>
     ${currentItem.time ? `<div class="post-time" style="font-size:.75rem;color:var(--text2);margin-bottom:4px">${formatTime(currentItem.time)}</div>` : ''}
     ${currentItem.wechat ? `<div style="font-size:.75rem;color:var(--text2);margin-bottom:12px">微信：${esc(currentItem.wechat)}</div>` : ''}
