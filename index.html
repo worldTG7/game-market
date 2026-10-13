@@ -1440,7 +1440,7 @@ function updateStickySearchBar(tab) {
                   ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
                   ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
                 </div>
-                ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
+                ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
               </div>
             </div>`;
           });
@@ -1658,7 +1658,7 @@ function renderCardGrid(items, gridId, opts = {}) {
           ${it._owner && !opts.hideOwner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
-        ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
+        ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
       </div>
     </div>`;
   });
@@ -1749,7 +1749,7 @@ function loadMoreItems() {
           ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
-        ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
+        ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
       </div>
     </div>`;
   });
@@ -1844,7 +1844,7 @@ function renderMinePanel() {
             ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
             ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
           </div>
-          ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
+          ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
         </div>
       </div>`;
     });
@@ -1948,7 +1948,7 @@ function viewUserPage(username, fromModal = false) {
             ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
             ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
           </div>
-          ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
+          ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
         </div>
       </div>`;
     });
@@ -1990,7 +1990,7 @@ function viewUserPage(username, fromModal = false) {
                 ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
                 ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
               </div>
-              ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
+              ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
             </div>
           </div>`;
         });
