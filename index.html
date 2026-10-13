@@ -826,8 +826,8 @@ async function saveItem(item) {
   const branch = toBranchName(currentUser.username);
   await ghWriteFile(branch, 'data/'+item.id+'.json', item, '发布道具: '+item.title);
 
-  // Don't update index on every save (too slow)
-  // Index is updated periodically or manually via refresh button
+  // Update main index in background (async, doesn't block save)
+  updateMainIndex().catch(e => console.warn('Index update failed:', e));
 }
 
 // Update the main branch index.json with all items (for fast loading)
