@@ -1586,13 +1586,20 @@ function openDetailById(id, fromUserPage = false) {
   const closeBtn = '<button class="modal-close" onclick="closeModal()">✕</button>';
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
-    const userClickHandler = (currentItem._owner && !fromUserPage) ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)"` : '';
     userBar.innerHTML = `
-      <div class="user-info" ${userClickHandler}>
+      <div class="user-info" id="detailUserInfo">
         ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
       </div>
       <div class="actions">${closeBtn}</div>
     `;
+    // Add click handler via addEventListener (more reliable than inline onclick)
+    if (currentItem._owner && !fromUserPage) {
+      const ownerName = currentItem._owner;
+      document.getElementById('detailUserInfo').addEventListener('click', function(e) {
+        e.stopPropagation();
+        viewUserPage(ownerName, true);
+      });
+    }
     userBar.style.display = 'flex';
   } else {
     userBar.innerHTML = closeBtn;
