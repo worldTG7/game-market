@@ -1501,10 +1501,20 @@ function viewUserPage(username, fromModal = false) {
   });
   h += '</div>';
   content.innerHTML = h;
+
+  // 动态计算 z-index：找到当前最高层级，再加 10
+  const userPageVisible = document.getElementById('userPageOverlay').classList.contains('show');
+  const modalVisible = document.getElementById('modalOverlay').classList.contains('show');
+  let baseZ = 210;
+  if (userPageVisible) baseZ = Math.max(baseZ, parseInt(document.getElementById('userPageOverlay').style.zIndex || '220'));
+  if (modalVisible) baseZ = Math.max(baseZ, parseInt(document.getElementById('modalOverlay').style.zIndex || '210'));
+  const newZ = baseZ + 10;
+
+  overlay.style.zIndex = newZ;
   overlay.classList.add('show');
   document.body.style.overflow = 'hidden';
   history.pushState({userPage:true}, '');
-  _userPagePushed = true;
+  layerStack.push('userPage');
 }
 
 function closeUserPage(fromPopstate = false) {
@@ -1516,9 +1526,12 @@ function closeUserPage(fromPopstate = false) {
   document.getElementById('userPageOverlay').classList.remove('show');
 
   // 如果是点击 ✕ 关闭，需要回退 history
-  if (!fromPopstate && _userPagePushed) {
-    _userPagePushed = false;
-    history.back();
+  if (!fromPopstate) {
+    const idx = layerStack.lastIndexOf('userPage');
+    if (idx !== -1) {
+      layerStack.splice(idx, 1);
+      history.back();
+    }
   }
 
   // 恢复之前的上下文
@@ -1646,7 +1659,7 @@ function openDetailById(id, fromUserPage = false) {
   modalOverlay.classList.add('show');
   document.body.style.overflow='hidden';
   history.pushState({modal:true}, '');
-  _modalPushed = true;
+  layerStack.push('modal');
 }
 
 function shareCurrentItem() {
@@ -1785,26 +1798,34 @@ function checkScrollHint(){
   }
 }
 
-let _modalPushed=false, _userPagePushed=false, _returningFromUserPage=false;
+// 层级栈：记录打开顺序，确保返回时按逆序关闭
+const layerStack = [];
+let _returningFromUserPage = false;
 
 // 全局 popstate 监听：手机返回键/左滑触发时关闭覆盖层
 window.addEventListener('popstate', function(e) {
   // 如果是从用户页返回详情页的过渡，跳过处理
   if (_returningFromUserPage) return;
 
-  const userOverlay = document.getElementById('userPageOverlay');
-  const modalOverlay = document.getElementById('modalOverlay');
-  // 优先关闭用户页，再关闭道具详情
-  if (userOverlay.classList.contains('show')) {
-    _userPagePushed = false;
-    closeUserPage(true);
-    return;
-  }
-  if (modalOverlay.classList.contains('show')) {
-    _modalPushed = false;
+  // 关闭最顶层的覆盖层
+  const top = layerStack.length ? layerStack[layerStack.length - 1] : null;
+  if (top === 'modal' && document.getElementById('modalOverlay').classList.contains('show')) {
+    layerStack.pop();
     closeModal();
     return;
   }
+  if (top === 'userPage' && document.getElementById('userPageOverlay').classList.contains('show')) {
+    layerStack.pop();
+    closeUserPage(true);
+    return;
+  }
+  // 兜底：栈为空但仍有覆盖层显示，按z-index关闭最高的
+  const userOverlay = document.getElementById('userPageOverlay');
+  const modalOverlay = document.getElementById('modalOverlay');
+  const userZ = userOverlay.classList.contains('show') ? parseInt(userOverlay.style.zIndex||'220') : 0;
+  const modalZ = modalOverlay.classList.contains('show') ? parseInt(modalOverlay.style.zIndex||'210') : 0;
+  if (modalZ >= userZ && modalZ > 0) { closeModal(); return; }
+  if (userZ > 0) { closeUserPage(true); return; }
 });
 
 function closeModal(e){
@@ -1812,7 +1833,11 @@ function closeModal(e){
   document.getElementById('modalOverlay').classList.remove('show');
   document.body.style.overflow='';
   const v=document.querySelector('.modal-media video');if(v)v.pause();
-  if(_modalPushed){_modalPushed=false;history.back();}
+  const idx = layerStack.lastIndexOf('modal');
+  if (idx !== -1) {
+    layerStack.splice(idx, 1);
+    history.back();
+  }
 }
 function contactSeller(){
   if(currentItem._owner) showToast('卖家: '+currentItem._owner+'，请在群内联系','success');
