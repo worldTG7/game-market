@@ -1586,21 +1586,15 @@ function openDetailById(id, fromUserPage = false) {
   const closeBtn = '<button class="modal-close" onclick="closeModal()">✕</button>';
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
-    const canClickUser = currentItem._owner && !fromUserPage;
+    // Use global variable + direct onclick for maximum reliability
+    window._detailUserCanClick = currentItem._owner && !fromUserPage;
+    window._detailUserName = currentItem._owner || '';
     userBar.innerHTML = `
-      <div class="user-info"${canClickUser ? ' style="cursor:pointer"' : ''}>
+      <div class="user-info" onclick="if(window._detailUserCanClick)viewUserPage(window._detailUserName,true)" style="${window._detailUserCanClick ? 'cursor:pointer' : ''}">
         ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
       </div>
       <div class="actions">${closeBtn}</div>
     `;
-    // Use event delegation on userBar — most reliable click detection
-    userBar.onclick = function(e) {
-      if (e.target.closest('.modal-close') || e.target.closest('.actions')) return;
-      if (canClickUser && e.target.closest('.user-info')) {
-        e.stopPropagation();
-        viewUserPage(currentItem._owner, true);
-      }
-    };
     userBar.style.display = 'flex';
   } else {
     userBar.innerHTML = closeBtn;
