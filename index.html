@@ -772,23 +772,12 @@ function updateHeader() {
 }
 
 function shareMainPage() {
-  console.log('shareMainPage called, currentUser:', currentUser);
-  if (!currentUser) {
-    console.log('No currentUser');
-    showToast('请先登录','error');
-    return;
-  }
+  if (!currentUser) { showToast('请先登录','error'); return; }
   const branchName = toBranchName(currentUser.username);
-  console.log('branchName:', branchName);
-  // 直接复制远程分享链接，无需部署
   const url = 'https://worldtg7.github.io/game-market/?user=' + encodeURIComponent(branchName);
-  console.log('URL to copy:', url);
   navigator.clipboard.writeText(url).then(() => {
-    console.log('Clipboard write success');
     showToast('分享链接已复制','success');
-  }).catch((err) => {
-    console.log('Clipboard write failed:', err);
-    // fallback: 弹出提示让用户手动复制
+  }).catch(() => {
     prompt('复制以下链接分享：', url);
   });
 }
@@ -2402,20 +2391,21 @@ render();
     setTimeout(() => ls.remove(), 300);
   }
 
-  // Load all items from GitHub (background, non-blocking)
-  loadAllItems().catch(e => console.warn('Background load failed:', e));
-
   // Sync index to main branch (background, non-blocking)
   updateMainIndex().catch(e => console.warn('Index sync failed:', e));
 
-  // Handle URL parameters to set initial view
-  if (itemParam) {
-    // Single item mode - show detail modal directly
-    setTimeout(() => openDetailById(itemParam), 300);
-  } else if (userParam) {
-    // User homepage mode - switch to everyone tab and show their items
-    switchTab('everyone');
-    viewUserPage(toBranchName(userParam));
+  if (itemParam || userParam) {
+    // 有 URL 参数时，必须先加载完数据再展示
+    await loadAllItems().catch(e => console.warn('Load items failed:', e));
+    if (itemParam) {
+      openDetailById(itemParam);
+    } else if (userParam) {
+      switchTab('everyone');
+      viewUserPage(toBranchName(userParam));
+    }
+  } else {
+    // 无 URL 参数，后台加载数据
+    loadAllItems().catch(e => console.warn('Background load failed:', e));
   }
 
   // Check saved session and validate
