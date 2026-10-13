@@ -203,6 +203,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-delete{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all .2s}
 .card-delete:hover{background:var(--danger);border-color:var(--danger)}
 .card{position:relative}
+/* Lazy load fade-in animation */
+.card-thumb{opacity:0;transition:opacity .3s ease}
+.card-thumb.loaded{opacity:1}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -497,13 +501,39 @@ async function ghCreateBranch(name) {
     }
   }
 }
+// jsdelivr CDN (fast in China, unlike raw.githubusercontent.com)
+function getCdnUrl(branch, path) {
+  return `https://cdn.jsdelivr.net/gh/${GH.owner}/${GH.repo}@${branch}/${path}`;
+}
+// Fast read from jsdelivr CDN (works great in China)
+async function cdnReadJson(branch, path) {
+  try {
+    const res = await fetch(getCdnUrl(branch, path) + '?v=' + Date.now(), { cache: 'no-cache' });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+async function cdnReadText(branch, path) {
+  try {
+    const res = await fetch(getCdnUrl(branch, path) + '?v=' + Date.now(), { cache: 'no-cache' });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch { return null; }
+}
+
 async function ghReadFile(branch, path) {
+  // Try CDN first (fast), fallback to API
+  const cdnResult = await cdnReadJson(branch, path);
+  if (cdnResult) return cdnResult;
   try {
     const d = await ghGet(`/repos/${GH.owner}/${GH.repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`);
     return JSON.parse(decodeURIComponent(escape(atob(d.content))));
   } catch { return null; }
 }
 async function ghReadRaw(branch, path) {
+  // Try CDN first (fast), fallback to API
+  const cdnResult = await cdnReadText(branch, path);
+  if (cdnResult) return cdnResult;
   try {
     const d = await ghGet(`/repos/${GH.owner}/${GH.repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`);
     return decodeURIComponent(escape(atob(d.content)));
@@ -799,8 +829,8 @@ async function saveItem(item) {
   const branch = toBranchName(currentUser.username);
   await ghWriteFile(branch, 'data/'+item.id+'.json', item, '发布道具: '+item.title);
 
-  // Update main branch index for fast loading
-  await updateMainIndex();
+  // Don't update index on every save (too slow)
+  // Index is updated periodically or manually via refresh button
 }
 
 // Update the main branch index.json with all items (for fast loading)
@@ -896,23 +926,68 @@ async function deleteItemData(item) {
   await updateMainIndex();
 }
 
-async function loadAllItems() {
-  // Show loading state immediately
-  showLoadingState('everyoneContent');
+// Cache key for localStorage
+const CACHE_KEY = 'game_market_items_v1';
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Get cached items from localStorage
+function getCachedItems() {
   try {
-    // FAST PATH: Try loading from main branch index (single API call)
-    const mainBranch = await ghDefaultBranch();
-    const indexData = await ghReadFile(mainBranch, 'index.json');
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (!cached) return null;
+    const data = JSON.parse(cached);
+    if (Date.now() - data.timestamp > CACHE_TTL) return null; // Expired
+    return data.items;
+  } catch { return null; }
+}
+
+// Save items to localStorage cache
+function setCachedItems(items) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      items: items,
+      timestamp: Date.now()
+    }));
+  } catch(e) {
+    console.warn('Cache save failed:', e);
+  }
+}
+
+async function loadAllItems() {
+  // STEP 1: Show cached data immediately (instant)
+  const cachedItems = getCachedItems();
+  if (cachedItems && cachedItems.length > 0) {
+    allItems = cachedItems;
+    // Merge with local myItems
+    if (currentUser && myItems.length) {
+      const remoteIds = new Set(allItems.map(it => it.id));
+      const localOnly = myItems.filter(it => !remoteIds.has(it.id)).map(it => ({...it, _owner: toBranchName(currentUser.username)}));
+      allItems.push(...localOnly);
+    }
+    allItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
+    renderEveryonePanel();
+    renderMinePanel();
+    console.log('✅ 显示缓存数据，', allItems.length, '个道具');
+  } else {
+    // No cache, show loading state
+    showLoadingState('everyoneContent');
+  }
+
+  // STEP 2: Fetch fresh data in background
+  try {
+    // Use jsdelivr CDN for index.json (fast in China)
+    const mainBranch = 'main';
+    const indexData = await cdnReadJson(mainBranch, 'index.json');
 
     let remoteItems = [];
 
     if (indexData && indexData.items && Array.isArray(indexData.items)) {
-      // Use cached index (super fast, ~1 API call)
+      // Use CDN index (super fast)
       remoteItems = indexData.items.map(it => ({ ...it, _owner: it._owner || 'unknown' }));
+      console.log('✅ CDN索引加载成功，', remoteItems.length, '个道具');
     } else {
-      // FALLBACK: Load from all branches (slow, for first time or if index is missing)
-      console.log('Index not found, loading from all branches...');
+      // Fallback: API call (slow, but works)
+      console.log('⚠️ CDN索引未找到，回退到API加载...');
       const branches = await ghGet(`/repos/${GH.owner}/${GH.repo}/branches`);
       const userBranches = branches.filter(b => b.name !== mainBranch && b.name !== 'gh-pages');
 
@@ -926,30 +1001,37 @@ async function loadAllItems() {
       results.forEach(r => { if (r.status==='fulfilled'&&r.value) remoteItems.push(...r.value); });
     }
 
-    // Merge: keep local myItems that might not have synced yet
+    // Merge with local myItems
     if (currentUser && myItems.length) {
       const remoteIds = new Set(remoteItems.map(it => it.id));
       const localOnly = myItems.filter(it => !remoteIds.has(it.id)).map(it => ({...it, _owner: toBranchName(currentUser.username)}));
       remoteItems.push(...localOnly);
     }
 
-    allItems = remoteItems;
-    allItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
+    remoteItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
 
-    // Render content first
-    renderEveryonePanel();
-    renderMinePanel();
+    // Only update if data changed
+    const newHash = JSON.stringify(remoteItems.map(it => it.id + ':' + it.time));
+    const oldHash = JSON.stringify(allItems.map(it => it.id + ':' + it.time));
 
-    // Then lazy load images
-    requestAnimationFrame(() => {
-      lazyLoadImages();
-    });
+    if (newHash !== oldHash) {
+      allItems = remoteItems;
+      renderEveryonePanel();
+      renderMinePanel();
+      console.log('✅ 数据已更新，', allItems.length, '个道具');
+    }
+
+    // Update cache
+    setCachedItems(remoteItems);
 
   } catch(e) {
-    console.error('Load all items:', e);
-    allItems = currentUser ? myItems.map(i=>({...i,_owner:currentUser.username})) : [];
-    renderEveryonePanel();
-    renderMinePanel();
+    console.error('Background refresh failed:', e);
+    // Keep showing cached data if available
+    if (!cachedItems || cachedItems.length === 0) {
+      allItems = currentUser ? myItems.map(i=>({...i,_owner:currentUser.username})) : [];
+      renderEveryonePanel();
+      renderMinePanel();
+    }
   }
 }
 
@@ -1024,8 +1106,11 @@ function lazyLoadImages() {
 }
 
 // ================================================================
-// EVERYONE PANEL
+// EVERYONE PANEL (with pagination & infinite scroll)
 // ================================================================
+let everyonePage = 0;
+const PAGE_SIZE = 20;
+
 function renderEveryonePanel() {
   const c = document.getElementById('everyoneContent');
   const display = allItems.filter(it => !it._deleted);
@@ -1035,8 +1120,14 @@ function renderEveryonePanel() {
       <p>暂无道具上架<br>点击右上角「登录/注册」发布你的道具</p></div>`;
     return;
   }
-  let h = '<div class="card-grid">';
-  display.forEach(it => {
+
+  // Reset pagination
+  everyonePage = 0;
+
+  // Render first page
+  let h = '<div class="card-grid" id="everyoneGrid">';
+  const pageItems = display.slice(0, PAGE_SIZE);
+  pageItems.forEach(it => {
     const th = renderCardThumb(it);
     h += `<div class="card" onclick="openDetailById('${esc(it.id)}')">
       ${th}
@@ -1053,7 +1144,91 @@ function renderEveryonePanel() {
     </div>`;
   });
   h += '</div>';
+
+  // Add load more button if there are more items
+  if (display.length > PAGE_SIZE) {
+    h += `<div id="loadMoreTrigger" style="text-align:center;padding:20px;color:var(--muted);font-size:.85rem">
+      <div style="display:inline-block;animation:spin 1s linear infinite">⟳</div> 加载更多...
+    </div>`;
+  }
+
   c.innerHTML = h;
+
+  // Setup infinite scroll
+  if (display.length > PAGE_SIZE) {
+    setupInfiniteScroll();
+  }
+}
+
+function loadMoreItems() {
+  everyonePage++;
+  const display = allItems.filter(it => !it._deleted);
+  const start = everyonePage * PAGE_SIZE;
+  const end = start + PAGE_SIZE;
+  const pageItems = display.slice(start, end);
+
+  if (pageItems.length === 0) {
+    // No more items
+    const trigger = document.getElementById('loadMoreTrigger');
+    if (trigger) trigger.innerHTML = '<div style="color:var(--muted);font-size:.85rem">已加载全部道具</div>';
+    return false;
+  }
+
+  const grid = document.getElementById('everyoneGrid');
+  if (!grid) return false;
+
+  // Append new cards
+  let h = '';
+  pageItems.forEach(it => {
+    const th = renderCardThumb(it);
+    h += `<div class="card" onclick="openDetailById('${esc(it.id)}')">
+      ${th}
+      <div class="card-body">
+        <div class="card-title">${esc(it.title)}</div>
+        <div class="card-price">${it.price}</div>
+        <div class="card-tags">
+          ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
+          ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
+          ${it._owner?`<span class="tag user" onclick="event.stopPropagation();viewUserPage('${esc(it._owner)}')">${esc(it._owner)}</span>`:''}
+        </div>
+        ${it.time?`<div class="card-time">${formatTime(it.time)}</div>`:''}
+      </div>
+    </div>`;
+  });
+  grid.insertAdjacentHTML('beforeend', h);
+
+  // Update trigger text
+  const trigger = document.getElementById('loadMoreTrigger');
+  if (trigger) {
+    if (end >= display.length) {
+      trigger.innerHTML = '<div style="color:var(--muted);font-size:.85rem">已加载全部道具</div>';
+    } else {
+      trigger.innerHTML = `<div style="display:inline-block;animation:spin 1s linear infinite">⟳</div> 加载更多... (${Math.min(end, display.length)}/${display.length})`;
+    }
+  }
+
+  return end < display.length;
+}
+
+function setupInfiniteScroll() {
+  const trigger = document.getElementById('loadMoreTrigger');
+  if (!trigger) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const hasMore = loadMoreItems();
+        if (!hasMore) {
+          observer.disconnect();
+        }
+      }
+    });
+  }, {
+    rootMargin: '200px 0px',
+    threshold: 0.01
+  });
+
+  observer.observe(trigger);
 }
 
 // ================================================================
