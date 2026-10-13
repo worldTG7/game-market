@@ -90,11 +90,55 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .upload-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#ff9a5c);border-radius:3px;transition:width .3s ease;width:0%}
 
 /* ===== LIKE BUTTON ===== */
-.like-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:20px;color:var(--text2);font-size:.8rem;cursor:pointer;transition:all .2s;font-weight:500}
+.like-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:20px;color:var(--text2);font-size:.8rem;cursor:pointer;transition:all .2s;font-weight:500;position:relative;overflow:visible}
 .like-btn:hover{background:var(--surface-hover);border-color:var(--accent);color:var(--accent)}
 .like-btn:active{transform:scale(.95)}
-.like-btn .like-icon{font-size:1rem;line-height:1}
+.like-btn .like-icon{font-size:1rem;line-height:1;transition:transform .2s}
 .like-btn .like-count{font-variant-numeric:tabular-nums}
+
+/* 点赞动画 */
+.like-btn.animating .like-icon{
+  animation: likeBounce 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+.like-btn.animating{
+  background: rgba(255,107,53,0.2);
+  border-color: var(--accent);
+}
+@keyframes likeBounce{
+  0%{transform:scale(1)}
+  30%{transform:scale(0.7)}
+  60%{transform:scale(1.3)}
+  100%{transform:scale(1)}
+}
+
+/* 数字弹跳 */
+.like-btn .like-count.bump{
+  animation: countBump 0.3s ease-out;
+}
+@keyframes countBump{
+  0%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.4);opacity:0.7}
+  100%{transform:scale(1);opacity:1}
+}
+
+/* 飘散的爱心粒子 */
+.like-particle{
+  position:absolute;
+  font-size:1rem;
+  pointer-events:none;
+  animation: particleFloat 1s ease-out forwards;
+  z-index:10;
+}
+@keyframes particleFloat{
+  0%{
+    opacity:1;
+    transform:translate(0,0) scale(1) rotate(0deg);
+  }
+  100%{
+    opacity:0;
+    transform:translate(var(--tx),var(--ty)) scale(0.3) rotate(var(--rot));
+  }
+}
 
 .video-badge{position:absolute;top:6px;right:6px;background:rgba(255,107,53,.85);color:#fff;font-size:.55rem;padding:2px 6px;border-radius:4px;font-weight:600;letter-spacing:.03em}
 .card-thumb-video-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
@@ -2151,8 +2195,29 @@ function likeItem() {
   locallyLikedItems.add(currentItem.id);
 
   // 立即更新 UI
+  const likeBtnEl = document.querySelector('.like-btn');
   const likeCountEl = document.querySelector('.like-btn .like-count');
-  if (likeCountEl) likeCountEl.textContent = currentItem.likes;
+
+  if (likeCountEl) {
+    likeCountEl.textContent = currentItem.likes;
+
+    // 数字弹跳动画
+    likeCountEl.classList.remove('bump');
+    void likeCountEl.offsetWidth; // 强制重排
+    likeCountEl.classList.add('bump');
+    setTimeout(() => likeCountEl.classList.remove('bump'), 300);
+  }
+
+  // 按钮弹跳动画 + 背景高亮
+  if (likeBtnEl) {
+    likeBtnEl.classList.remove('animating');
+    void likeBtnEl.offsetWidth;
+    likeBtnEl.classList.add('animating');
+    setTimeout(() => likeBtnEl.classList.remove('animating'), 500);
+
+    // 创建飘散的爱心粒子
+    spawnLikeParticles(likeBtnEl);
+  }
 
   // 更新本地数据
   const localItem = allItems.find(it => it.id === currentItem.id);
@@ -2174,6 +2239,39 @@ function likeItem() {
   // 防抖：2秒后同步到远端（快速点击只触发一次）
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(syncLikes, 2000);
+}
+
+// 生成飘散的爱心粒子
+function spawnLikeParticles(btnEl) {
+  const rect = btnEl.getBoundingClientRect();
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+
+  const hearts = ['❤️', '💕', '💖', '💗', '✨', '🌟'];
+
+  for (let i = 0; i < 6; i++) {
+    const particle = document.createElement('div');
+    particle.className = 'like-particle';
+    particle.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+
+    // 随机方向
+    const angle = (Math.random() - 0.5) * Math.PI; // -90° 到 90°
+    const distance = 60 + Math.random() * 40;
+    const tx = Math.sin(angle) * distance;
+    const ty = -Math.cos(angle) * distance - 20; // 向上飘
+    const rot = (Math.random() - 0.5) * 360;
+
+    particle.style.left = centerX + 'px';
+    particle.style.top = centerY + 'px';
+    particle.style.setProperty('--tx', tx + 'px');
+    particle.style.setProperty('--ty', ty + 'px');
+    particle.style.setProperty('--rot', rot + 'deg');
+
+    document.body.appendChild(particle);
+
+    // 动画结束后移除
+    setTimeout(() => particle.remove(), 1000);
+  }
 }
 
 // 同步点赞数到远程（读取远端最新值 + 累加本地增量，避免覆盖冲突）
