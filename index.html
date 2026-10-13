@@ -106,6 +106,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .detail-header{position:sticky;top:0;z-index:10;padding:12px 16px;height:64px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;flex-shrink:0;justify-content:space-between;gap:10px}
 .detail-header .user-info{display:flex;align-items:center;gap:10px;cursor:pointer;min-width:0}
 .detail-header .user-info:active{background:rgba(255,255,255,.05)}
+.detail-header .user-info.static{cursor:default}
+.detail-header .user-info.static:active{background:none}
 .detail-header .user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8f5c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.9rem;flex-shrink:0;box-shadow:0 2px 8px rgba(255,107,53,.3)}
 .detail-header .user-name{font-size:.95rem;font-weight:600;color:var(--text)}
 .detail-header .user-count{font-size:.78rem;color:var(--text2);margin-top:2px}
@@ -1587,12 +1589,22 @@ function openDetailById(id, fromUserPage = false) {
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
     const canClickUser = !fromUserPage; // 仅首页进入时可点击用户名
-    userBar.innerHTML = `
-      <div class="user-info" ${canClickUser ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)" style="cursor:pointer"` : ''}>
-        ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
-      </div>
-      <div class="actions">${closeBtn}</div>
-    `;
+    if (canClickUser) {
+      userBar.innerHTML = `
+        <div class="user-info" onclick="viewUserPage('${escJs(currentItem._owner)}', true)">
+          ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
+        </div>
+        <div class="actions">${closeBtn}</div>
+      `;
+    } else {
+      // 不可点击时：添加 static 类，去掉光标样式和 active 反馈，显示为普通信息
+      userBar.innerHTML = `
+        <div class="user-info static">
+          ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
+        </div>
+        <div class="actions">${closeBtn}</div>
+      `;
+    }
     userBar.style.display = 'flex';
   } else {
     userBar.innerHTML = closeBtn;
