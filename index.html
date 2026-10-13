@@ -1386,7 +1386,7 @@ function renderMinePanel() {
   h += '<div class="card-grid">';
   display.forEach(it => {
     const th = renderCardThumb(it);
-    h += `<div class="card" onclick="openDetailById('${esc(it.id)}')">
+    h += `<div class="card" onclick="openDetailById('${esc(it.id)}', true)">
       <button class="card-delete" onclick="event.stopPropagation();deleteMyItem('${esc(it.id)}')" title="删除">×</button>
       ${th}
       <div class="card-body">
@@ -1586,8 +1586,9 @@ function openDetailById(id, fromUserPage = false) {
   const closeBtn = '<button class="modal-close" onclick="closeModal()">✕</button>';
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
+    const canClickUser = !fromUserPage; // 仅首页进入时可点击用户名
     userBar.innerHTML = `
-      <div class="user-info" onclick="viewUserPage('${escJs(currentItem._owner)}', true)" style="cursor:pointer">
+      <div class="user-info" ${canClickUser ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)" style="cursor:pointer"` : ''}>
         ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
       </div>
       <div class="actions">${closeBtn}</div>
