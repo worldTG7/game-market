@@ -75,6 +75,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .tag{font-size:.6rem;padding:2px 7px;border-radius:20px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
 .tag.heat{background:rgba(255,107,53,.12);color:var(--accent);border-color:rgba(255,107,53,.25)}
 .tag.user{background:rgba(78,205,196,.1);color:var(--teal);border-color:rgba(78,205,196,.2)}
+.card-quote{display:flex;gap:8px;margin-bottom:8px;padding:8px;background:linear-gradient(135deg,rgba(78,205,196,.08),rgba(69,183,170,.05));border-radius:8px;border-left:3px solid var(--teal)}
+.card-quote-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--teal),#45b7aa);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;flex-shrink:0;box-shadow:0 2px 4px rgba(78,205,196,.25)}
+.card-quote-text{flex:1;font-size:.82rem;line-height:1.5;color:var(--text)}
+.card-quote-name{font-weight:700;color:var(--teal);margin-right:4px}
 .card-owner{display:flex;align-items:center;gap:6px;margin-bottom:6px}
 .card-owner-avatar{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--teal),#45b7aa);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.65rem;font-weight:600;flex-shrink:0}
 .card-owner-name{font-size:.75rem;color:var(--text2);font-weight:500}
@@ -1251,11 +1255,12 @@ function renderEveryonePanel() {
     h += `<div class="card" onclick="openDetailById('${esc(it.id)}')">
       ${th}
       <div class="card-body">
-        ${it._owner?`<div class="card-owner">
-          <div class="card-owner-avatar">${esc(it._owner.charAt(0))}</div>
-          <span class="card-owner-name">${esc(it._owner)}</span>
-        </div>`:''}
-        <div class="card-title">${esc(it.title)}</div>
+        ${it._owner?`<div class="card-quote">
+          <div class="card-quote-avatar">${esc(it._owner.charAt(0))}</div>
+          <div class="card-quote-text">
+            <span class="card-quote-name">${esc(it._owner)}</span>${esc(it.title)}
+          </div>
+        </div>`:`<div class="card-title">${esc(it.title)}</div>`}
         <div class="card-price ${it.priceType || 'rmb'}"><span class="price-num">${it.price}</span></div>
         <div class="card-tags">
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
@@ -1306,11 +1311,12 @@ function loadMoreItems() {
     h += `<div class="card" onclick="openDetailById('${esc(it.id)}')">
       ${th}
       <div class="card-body">
-        ${it._owner?`<div class="card-owner">
-          <div class="card-owner-avatar">${esc(it._owner.charAt(0))}</div>
-          <span class="card-owner-name">${esc(it._owner)}</span>
-        </div>`:''}
-        <div class="card-title">${esc(it.title)}</div>
+        ${it._owner?`<div class="card-quote">
+          <div class="card-quote-avatar">${esc(it._owner.charAt(0))}</div>
+          <div class="card-quote-text">
+            <span class="card-quote-name">${esc(it._owner)}</span>${esc(it.title)}
+          </div>
+        </div>`:`<div class="card-title">${esc(it.title)}</div>`}
         <div class="card-price ${it.priceType || 'rmb'}"><span class="price-num">${it.price}</span></div>
         <div class="card-tags">
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
@@ -2376,6 +2382,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .btn-primary{background:linear-gradient(135deg,var(--accent),#ff8f5c);color:#fff}
 .btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
 .modal-actions{display:flex;gap:10px;padding:16px 20px 24px;position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border)}
+.card-quote{display:flex;gap:8px;margin-bottom:8px;padding:8px;background:linear-gradient(135deg,rgba(78,205,196,.08),rgba(69,183,170,.05));border-radius:8px;border-left:3px solid var(--teal)}
+.card-quote-avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--teal),#45b7aa);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;flex-shrink:0;box-shadow:0 2px 4px rgba(78,205,196,.25)}
+.card-quote-text{flex:1;font-size:.82rem;line-height:1.5;color:var(--text)}
+.card-quote-name{font-weight:700;color:var(--teal);margin-right:4px}
 @media(min-width:420px){.card-grid{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head><body>
@@ -2386,7 +2396,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 </div>
 <script>
 var items=${JSON.stringify(items)};var mi2=0,ci=null;
-function render(){var g=document.getElementById('grid'),h='';items.forEach(function(it,i){var th=it.media&&it.media.length?(it.media[0].type==='image'?'<img class="card-thumb" src="'+it.media[0].data+'" loading="lazy">':'<video class="card-thumb" src="'+it.media[0].data+'" muted preload="metadata"></video>'):'<div class="card-thumb-placeholder">🎮</div>';h+='<div class="card" onclick="op('+i+')">'+th+'<div class="card-body">'+(it._owner?'<div class="card-owner"><div class="card-owner-avatar">'+e2(it._owner.charAt(0))+'</div><span class="card-owner-name">'+e2(it._owner)+'</span></div>':'')+'<div class="card-title">'+e2(it.title)+'</div><div class="card-price '+(it.priceType||'rmb')+'"><span class="price-num">'+it.price+'</span></div><div class="card-tags"><span class="tag heat">'+e2(it.category)+'</span>'+(it.game?'<span class="tag">'+e2(it.game)+'</span>':'')+'</div></div></div>';});g.innerHTML=h;}
+function render(){var g=document.getElementById('grid'),h='';items.forEach(function(it,i){var th=it.media&&it.media.length?(it.media[0].type==='image'?'<img class="card-thumb" src="'+it.media[0].data+'" loading="lazy">':'<video class="card-thumb" src="'+it.media[0].data+'" muted preload="metadata"></video>'):'<div class="card-thumb-placeholder">🎮</div>';h+='<div class="card" onclick="op('+i+')">'+th+'<div class="card-body">'+(it._owner?'<div class="card-quote"><div class="card-quote-avatar">'+e2(it._owner.charAt(0))+'</div><div class="card-quote-text"><span class="card-quote-name">'+e2(it._owner)+'</span>'+e2(it.title)+'</div></div>':'<div class="card-title">'+e2(it.title)+'</div>')+'<div class="card-price '+(it.priceType||'rmb')+'"><span class="price-num">'+it.price+'</span></div><div class="card-tags"><span class="tag heat">'+e2(it.category)+'</span>'+(it.game?'<span class="tag">'+e2(it.game)+'</span>':'')+'</div></div></div>';});g.innerHTML=h;}
 function op(i){ci=items[i];mi2=0;rm();document.getElementById('mi').innerHTML='<div class="modal-title">'+e2(ci.title)+'</div><div class="modal-price '+(ci.priceType||'rmb')+'">'+ci.price+'</div><div class="modal-desc">'+e2(ci.desc)+'</div><div class="modal-meta"><span class="meta-chip">'+e2(ci.category)+'</span>'+(ci.game?'<span class="meta-chip">🎮 '+e2(ci.game)+'</span>':'')+(ci.time?'<span class="meta-chip">📅 '+ci.time+'</span>':'')+(ci._owner?'<span class="meta-chip">👤 '+e2(ci._owner)+'</span>':'')+(ci.tags||[]).map(function(t){return'<span class="meta-chip">'+e2(t)+'</span>';}).join('')+'</div>';document.getElementById('ov').classList.add('show');document.body.style.overflow='hidden';}
 function rm(){var el=document.getElementById('mm'),m=ci.media;if(!m||!m.length){el.innerHTML='<div style="color:#6b7084;font-size:3rem">🎮</div>';return;}var d=m[mi2],h=d.type==='image'?'<img src="'+d.data+'">':'<video src="'+d.data+'" controls playsinline></video>';if(m.length>1){h+='<button class="media-arrow left" onclick="nv(-1)">‹</button><button class="media-arrow right" onclick="nv(1)">›</button><div class="media-nav">';m.forEach(function(_,i){h+='<button class="media-dot'+(i===mi2?' active':'')+'" onclick="go('+i+')"></button>';});h+='</div>';}el.innerHTML=h;}
 function nv(d){var l=ci.media.length;mi2=(mi2+d+l)%l;rm();}
