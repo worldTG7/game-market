@@ -97,11 +97,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .modal{width:100%;min-height:100dvh;max-width:100%;background:var(--bg);animation:slideUp .25s ease;display:flex;flex-direction:column;position:relative}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{display:none}
-.modal-close{position:fixed;top:calc(env(safe-area-inset-top,0px) + 16px);right:16px;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,rgba(0,0,0,.5),rgba(0,0,0,.35));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.95);font-size:1.1rem;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:210;transition:all .2s ease;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.modal-close{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,rgba(0,0,0,.5),rgba(0,0,0,.35));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.95);font-size:1.1rem;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s ease;box-shadow:0 2px 12px rgba(0,0,0,.3);flex-shrink:0}
 .modal-close:hover{transform:scale(1.05);background:linear-gradient(135deg,rgba(0,0,0,.6),rgba(0,0,0,.45));border-color:rgba(255,255,255,.35);box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .modal-close:active{transform:scale(.92);background:linear-gradient(135deg,rgba(0,0,0,.7),rgba(0,0,0,.55));color:#fff}
-.modal-user-bar{padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;flex-shrink:0;gap:10px}
-.modal-user-bar .user-link{display:contents;cursor:pointer}
+.modal-user-bar{padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;flex-shrink:0;justify-content:space-between;gap:10px}
+.modal-user-bar .user-info{display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;min-width:0}
+.modal-user-bar .user-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .modal-user-bar .user-link:active{background:rgba(255,255,255,.05)}
 .modal-user-bar .user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8f5c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.9rem;flex-shrink:0;box-shadow:0 2px 8px rgba(255,107,53,.3)}
 .modal-user-bar .user-name{font-size:.95rem;font-weight:600;color:var(--text)}
@@ -230,8 +231,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .user-page-close{position:fixed;top:calc(env(safe-area-inset-top,0px) + 16px);right:16px;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,rgba(0,0,0,.5),rgba(0,0,0,.35));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.95);font-size:1.1rem;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:210;transition:all .2s ease;box-shadow:0 2px 12px rgba(0,0,0,.3)}
 .user-page-close:hover{transform:scale(1.05);background:linear-gradient(135deg,rgba(0,0,0,.6),rgba(0,0,0,.45));border-color:rgba(255,255,255,.35);box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .user-page-close:active{transform:scale(.92);background:linear-gradient(135deg,rgba(0,0,0,.7),rgba(0,0,0,.55));color:#fff}
-.user-page-header{position:sticky;top:0;z-index:10;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.user-page-user-bar{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.user-page-header{position:sticky;top:0;z-index:10;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px}
+.user-page-user-bar{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer}
+.user-page-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .user-page-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8f5c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.9rem;flex-shrink:0;box-shadow:0 2px 8px rgba(255,107,53,.3)}
 .user-page-name{font-size:.95rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .user-page-count{font-size:.78rem;color:var(--text2);margin-top:2px}
@@ -366,8 +368,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <div class="modal-user-bar" id="modalUserBar"></div>
+    <div class="modal-user-bar" id="modalUserBar">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
     <div class="modal-media" id="modalMedia"></div>
     <div class="modal-info" id="modalInfo"></div>
     <div class="modal-actions" id="modalActions">
@@ -1561,15 +1564,22 @@ function openDetailById(id) {
 
   // Populate user bar at top
   const userBar = document.getElementById('modalUserBar');
+  const closeBtn = '<button class="modal-close" onclick="closeModal()">✕</button>';
+  const shareBtn = `<button class="share-header-btn" onclick="shareCurrentItem()"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享</button>`;
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
     const userClickHandler = currentItem._owner ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)"` : '';
+    const inlineShareBtn = `<button class="share-header-btn" onclick="shareCurrentItem()" style="position:static;z-index:auto;padding:6px 14px;font-size:.75rem;top:auto;right:auto"><svg viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:4px;vertical-align:-2px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享</button>`;
     userBar.innerHTML = `
-      ${currentItem._owner ? `<div class="user-link" ${userClickHandler}><div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div></div>` : ''}
+      <div class="user-info" ${userClickHandler}>
+        ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
+      </div>
+      <div class="user-actions">${inlineShareBtn}${closeBtn}</div>
     `;
     userBar.style.display = 'flex';
   } else {
-    userBar.style.display = 'none';
+    userBar.innerHTML = closeBtn;
+    userBar.style.display = 'flex';
   }
 
   document.getElementById('modalInfo').innerHTML = `
