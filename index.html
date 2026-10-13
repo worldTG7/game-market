@@ -2135,6 +2135,22 @@ async function syncLikes() {
 
     await ghWriteFile(ownerBranch, 'data/'+currentItem.id+'.json', currentItem, '点赞: '+currentItem.title);
 
+    // 更新本地缓存中的 likes 值
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const cacheData = JSON.parse(cached);
+        const cachedItem = cacheData.items.find(it => it.id === currentItem.id);
+        if (cachedItem) {
+          cachedItem.likes = currentItem.likes;
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+          console.log('✅ 本地缓存已更新');
+        }
+      } catch(e) {
+        console.warn('更新缓存失败:', e);
+      }
+    }
+
     // 异步更新主索引（不阻塞 UI）
     updateMainIndex().catch(e => console.warn('Index update failed:', e));
   } catch(e) {
