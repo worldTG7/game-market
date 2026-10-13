@@ -216,9 +216,21 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-delete:hover{background:var(--danger);border-color:var(--danger)}
 .card{position:relative}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* ===== LOADING SCREEN ===== */
+.loading-screen{position:fixed;inset:0;z-index:9999;background:rgba(15,17,23,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s ease}
+.loading-screen.fade-out{opacity:0;pointer-events:none}
+.loading-spinner-ring{width:36px;height:36px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+.loading-text{margin-top:16px;font-size:.88rem;color:var(--text2);letter-spacing:.05em}
 </style>
 </head>
 <body>
+
+<!-- ===== LOADING SCREEN ===== -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-spinner-ring"></div>
+  <div class="loading-text">加载中…</div>
+</div>
 
 <!-- ===== APP ===== -->
 <div id="mainApp">
@@ -2296,6 +2308,13 @@ render();
 
   // Sync index to main branch (ensure index.json reflects current state)
   await updateMainIndex().catch(e => console.warn('Index sync failed:', e));
+
+  // 淡出加载界面
+  const ls = document.getElementById('loadingScreen');
+  if (ls) {
+    ls.classList.add('fade-out');
+    setTimeout(() => ls.remove(), 500);
+  }
 
   // Handle URL parameters to set initial view
   if (itemParam) {
