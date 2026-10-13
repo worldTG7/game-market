@@ -1404,7 +1404,6 @@ function viewUserPage(username, fromModal = false) {
   const userItems = allItems.filter(it => it._owner === branchName && !it._deleted);
   const avatar = username ? username.charAt(0).toUpperCase() : '?';
 
-  const canShare = currentUser && currentUser.username === username;
   header.innerHTML = `
     <button class="user-page-close" onclick="closeUserPage()">✕</button>
     <div class="user-page-user-bar">
@@ -1412,7 +1411,7 @@ function viewUserPage(username, fromModal = false) {
       <div class="user-page-name">${esc(username)}</div>
       <div class="user-page-count">${userItems.length} 个道具</div>
     </div>
-    ${canShare ? `<button class="share-header-btn" onclick="shareUserPage('${escJs(username)}')"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享主页</button>` : ''}`;
+    <button class="share-header-btn" onclick="shareUserPage('${escJs(username)}')"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享主页</button>`;
 
   if (!userItems.length) {
     content.innerHTML = `<div class="empty-state">
@@ -1554,13 +1553,9 @@ function openDetailById(id) {
       ${currentItem.game?`<span class="meta-chip">🎮 ${esc(currentItem.game)}</span>`:''}
       ${(currentItem.tags||[]).map(t=>`<span class="meta-chip">${esc(t)}</span>`).join('')}
     </div>`;
-  // Add share button if user is logged in and owns this item
+  // Add share button for all users (logged-in owner gets deploy option, others get link copy)
   const actionsEl = document.getElementById('modalActions');
-  if (currentUser && currentItem._owner === toBranchName(currentUser.username)) {
-    actionsEl.innerHTML = `<button class="btn btn-teal" onclick="shareCurrentItem()" style="flex:1"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;vertical-align:-3px;margin-right:4px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享此道具</button>`;
-  } else {
-    actionsEl.innerHTML = '';
-  }
+  actionsEl.innerHTML = `<button class="btn btn-teal" onclick="shareCurrentItem()" style="flex:1"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;vertical-align:-3px;margin-right:4px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享此道具</button>`;
   document.getElementById('modalOverlay').classList.add('show');
   document.body.style.overflow='hidden';
   history.pushState({modal:true}, '');
@@ -1570,12 +1565,35 @@ function openDetailById(id) {
 function shareCurrentItem() {
   if (!currentItem) { showToast('没有选中的道具','error'); return; }
   closeModal();
+  // 未登录用户直接复制链接分享，无需部署
+  if (!currentUser) {
+    const url = location.origin + location.pathname + '?item=' + encodeURIComponent(currentItem.id);
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('分享链接已复制','success');
+    }).catch(() => {
+      // fallback: 弹出提示让用户手动复制
+      prompt('复制以下链接分享：', url);
+    });
+    return;
+  }
   openDeployModal('item', currentItem.id);
 }
 
 function shareUserPage(username) {
   if (!username) { showToast('用户名无效','error'); return; }
-  openDeployModal('user', toBranchName(username));
+  const branchName = toBranchName(username);
+  // 未登录用户直接复制链接分享，无需部署
+  if (!currentUser) {
+    const url = location.origin + location.pathname + '?user=' + encodeURIComponent(branchName);
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('分享链接已复制','success');
+    }).catch(() => {
+      // fallback: 弹出提示让用户手动复制
+      prompt('复制以下链接分享：', url);
+    });
+    return;
+  }
+  openDeployModal('user', branchName);
 }
 
 function formatTime(t) {
