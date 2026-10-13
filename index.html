@@ -972,30 +972,33 @@ async function loadAllItems() {
 
   // STEP 2: Fetch fresh data in background
   try {
-    // Use jsdelivr CDN for index.json (fast in China)
     const mainBranch = 'main';
-    const indexData = await cdnReadJson(mainBranch, 'index.json');
-
     let remoteItems = [];
 
-    if (indexData && indexData.items && Array.isArray(indexData.items)) {
-      // Use CDN index (super fast)
-      remoteItems = indexData.items.map(it => ({ ...it, _owner: it._owner || 'unknown' }));
-      console.log('✅ CDN索引加载成功，', remoteItems.length, '个道具');
+    // Try GitHub API directly (always fresh, bypasses CDN cache)
+    console.log('📡 从 GitHub API 加载最新数据...');
+    const branches = await ghGet(`/repos/${GH.owner}/${GH.repo}/branches`);
+    const userBranches = branches.filter(b => b.name !== mainBranch && b.name !== 'gh-pages');
+
+    const results = await Promise.allSettled(userBranches.map(async b => {
+      const files = await ghListDir(b.name, 'data');
+      const items = await Promise.allSettled(files.map(f => ghReadFile(b.name, 'data/'+f.name)));
+      return items.filter(r=>r.status==='fulfilled'&&r.value&&r.value.id)
+        .map(r => ({ ...r.value, _owner: b.name }));
+    }));
+
+    results.forEach(r => { if (r.status==='fulfilled'&&r.value) remoteItems.push(...r.value); });
+
+    if (remoteItems.length === 0) {
+      // Fallback to CDN if API failed
+      console.log('⚠️ API 加载失败，尝试 CDN...');
+      const indexData = await cdnReadJson(mainBranch, 'index.json');
+      if (indexData && indexData.items && Array.isArray(indexData.items)) {
+        remoteItems = indexData.items.map(it => ({ ...it, _owner: it._owner || 'unknown' }));
+        console.log('✅ CDN索引加载成功，', remoteItems.length, '个道具');
+      }
     } else {
-      // Fallback: API call (slow, but works)
-      console.log('⚠️ CDN索引未找到，回退到API加载...');
-      const branches = await ghGet(`/repos/${GH.owner}/${GH.repo}/branches`);
-      const userBranches = branches.filter(b => b.name !== mainBranch && b.name !== 'gh-pages');
-
-      const results = await Promise.allSettled(userBranches.map(async b => {
-        const files = await ghListDir(b.name, 'data');
-        const items = await Promise.allSettled(files.map(f => ghReadFile(b.name, 'data/'+f.name)));
-        return items.filter(r=>r.status==='fulfilled'&&r.value&&r.value.id)
-          .map(r => ({ ...r.value, _owner: b.name }));
-      }));
-
-      results.forEach(r => { if (r.status==='fulfilled'&&r.value) remoteItems.push(...r.value); });
+      console.log('✅ API 加载成功，', remoteItems.length, '个道具');
     }
 
     // Merge with local myItems
@@ -1007,19 +1010,22 @@ async function loadAllItems() {
 
     remoteItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
 
+    // Filter out deleted items before caching and display
+    const activeItems = remoteItems.filter(it => !it._deleted);
+
     // Only update if data changed OR we showed loading skeleton (need to replace it)
-    const newHash = JSON.stringify(remoteItems.map(it => it.id + ':' + it.time));
+    const newHash = JSON.stringify(activeItems.map(it => it.id + ':' + it.time));
     const oldHash = JSON.stringify(allItems.map(it => it.id + ':' + it.time));
 
     if (newHash !== oldHash || !showedCache) {
-      allItems = remoteItems;
+      allItems = activeItems;
       renderEveryonePanel();
       renderMinePanel();
-      console.log('✅ 数据已更新，', allItems.length, '个道具');
+      console.log('✅ 数据已更新，', allItems.length, '个道具（已过滤删除项）');
     }
 
-    // Update cache
-    setCachedItems(remoteItems);
+    // Update cache (only non-deleted items)
+    setCachedItems(activeItems);
 
   } catch(e) {
     console.error('Background refresh failed:', e);
@@ -1272,10 +1278,10 @@ function renderMinePanel() {
 async function deleteMyItem(itemId) {
   if (!currentUser) { showToast('请先登录','error'); return; }
   if (!(await validateSession())) return;
-  if (!confirm('确定删除此道具？（标记为已删除）')) return;
+  if (!confirm('确定删除此道具？')) return;
   const item = myItems.find(it => it.id === itemId) || allItems.find(it => it.id === itemId);
   if (!item) { showToast('道具不存在','error'); return; }
-  showToast('⏳ 正在标记删除...','success');
+  showToast('⏳ 正在删除...','success');
   item._deleted = true;
   try {
     await saveItem(item);
@@ -1340,14 +1346,18 @@ function closeUserPage() {
 // ================================================================
 function renderMyItems() {
   const el = document.getElementById('myItemsList');
-  if (!myItems.length) { el.innerHTML = ''; return; }
+  // Only show non-deleted items
+  const activeItems = myItems.filter(it => !it._deleted);
+  if (!activeItems.length) { el.innerHTML = ''; return; }
   let h = '<div style="font-size:.78rem;font-weight:600;color:var(--text2);margin-bottom:10px">📦 我已发布的道具</div>';
-  myItems.forEach((it,i) => {
+  activeItems.forEach((it,i) => {
     const th = renderMyItemThumb(it);
+    // Find original index in myItems for delete
+    const origIdx = myItems.indexOf(it);
     h += `<div class="my-item-row">
       ${th}
       <div class="my-item-info"><div class="my-item-title">${esc(it.title)}</div><div class="my-item-price">¥${it.price}</div></div>
-      <button class="my-item-del" onclick="confirmDeleteItem(${i})">删除</button>
+      <button class="my-item-del" onclick="confirmDeleteItem(${origIdx})">删除</button>
     </div>`;
   });
   el.innerHTML = h;
@@ -1356,14 +1366,22 @@ function renderMyItems() {
 async function confirmDeleteItem(idx) {
   if (!confirm('确定删除此道具？')) return;
   const item = myItems[idx];
-  showToast('正在删除...','success');
+  showToast('⏳ 正在删除...','success');
   try {
-    await deleteItemData(item);
-    myItems.splice(idx, 1);
+    // Soft delete: mark as deleted instead of hard deleting
+    item._deleted = true;
+    if (currentUser) {
+      await saveItem(item);
+    }
     renderMyItems();
     showToast('✅ 已删除','success');
-    await loadAllItems();
-  } catch(e) { showToast('删除失败: '+e.message,'error'); }
+    if (currentUser) {
+      await loadAllItems();
+    }
+  } catch(e) {
+    item._deleted = false;
+    showToast('删除失败: '+e.message,'error');
+  }
 }
 
 // ================================================================
