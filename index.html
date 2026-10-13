@@ -2130,6 +2130,9 @@ render();
   // Load all items from GitHub (background)
   await loadAllItems().catch(e => console.warn('Background load failed:', e));
 
+  // Sync index to main branch (ensure index.json reflects current state)
+  await updateMainIndex().catch(e => console.warn('Index sync failed:', e));
+
   // Handle URL parameters to set initial view
   if (itemParam) {
     // Single item mode - show detail modal directly
