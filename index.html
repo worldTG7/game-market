@@ -397,46 +397,49 @@ function getMediaSrc(media) {
   return '';
 }
 
-// Render card thumbnail with blur placeholder
+// Render card thumbnail (simple, direct rendering with error handling)
 function renderCardThumb(item) {
   if (!item.media || !item.media.length) {
     return `<div class="card-thumb-placeholder">🎮</div>`;
   }
   const m = item.media[0];
-  const fullSrc = getMediaSrc(m);
+  const src = getMediaSrc(m);
+
+  if (!src) {
+    return `<div class="card-thumb-placeholder">🎮</div>`;
+  }
 
   if (m.type === 'video') {
-    const thumbSrc = m.thumbnail || fullSrc;
-    // Use blur as initial src, then upgrade to full quality
-    const initialSrc = m.blur || thumbSrc;
+    const thumbSrc = m.thumbnail || src;
     return `<div class="card-thumb-wrapper">
-      <img class="card-thumb" src="${initialSrc}" data-full="${thumbSrc}" style="filter:blur(10px);transition:filter 0.3s" onload="this.style.filter='none'" alt="视频封面">
+      <img class="card-thumb" src="${thumbSrc}" alt="视频封面" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="card-thumb-placeholder" style="display:none">🎮</div>
       <div class="card-thumb-video-icon"></div>
       <span class="video-badge">VIDEO</span>
     </div>`;
   }
 
-  // Use blur as initial src, then upgrade to compressed version
-  const initialSrc = m.blur || fullSrc;
-  return `<img class="card-thumb" src="${initialSrc}" data-full="${fullSrc}" style="filter:blur(10px);transition:filter 0.3s" onload="this.style.filter='none'" alt="道具图片">`;
+  return `<img class="card-thumb" src="${src}" alt="道具图片" onerror="this.outerHTML='<div class=\\'card-thumb-placeholder\\'>🎮</div>'">`;
 }
 
-// Render my-item thumbnail with blur placeholder
+// Render my-item thumbnail (simple, direct rendering with error handling)
 function renderMyItemThumb(item) {
   if (!item.media || !item.media.length) {
     return `<div class="my-item-thumb-ph">🎮</div>`;
   }
   const m = item.media[0];
-  const fullSrc = getMediaSrc(m);
+  const src = getMediaSrc(m);
 
-  if (m.type === 'video') {
-    const thumbSrc = m.thumbnail || fullSrc;
-    const initialSrc = m.blur || thumbSrc;
-    return `<img class="my-item-thumb" src="${initialSrc}" data-full="${thumbSrc}" style="filter:blur(10px);transition:filter 0.3s" onload="this.style.filter='none'">`;
+  if (!src) {
+    return `<div class="my-item-thumb-ph">🎮</div>`;
   }
 
-  const initialSrc = m.blur || fullSrc;
-  return `<img class="my-item-thumb" src="${initialSrc}" data-full="${fullSrc}" style="filter:blur(10px);transition:filter 0.3s" onload="this.style.filter='none'">`;
+  if (m.type === 'video') {
+    const thumbSrc = m.thumbnail || src;
+    return `<img class="my-item-thumb" src="${thumbSrc}" onerror="this.outerHTML='<div class=\\'my-item-thumb-ph\\'>🎮</div>'">`;
+  }
+
+  return `<img class="my-item-thumb" src="${src}" onerror="this.outerHTML='<div class=\\'my-item-thumb-ph\\'>🎮</div>'">`;
 }
 
 // ================================================================
@@ -802,11 +805,46 @@ async function deleteItemData(item) {
   const branch = toBranchName(currentUser.username);
   // Delete JSON data file
   await ghDeleteFile(branch, 'data/'+item.id+'.json', '删除道具: '+item.title);
-  // Delete associated media files
+  // Delete associated media files (thumbnails, compressed versions, and originals)
   if (item.media && item.media.length) {
     for (const media of item.media) {
       if (media.filename) {
+        // Delete the main file (thumbnail/compressed version)
         await ghDeleteFile(branch, 'media/'+media.filename, '删除媒体: '+media.filename);
+
+        // Extract base name and try to delete original backup
+        const baseName = media.filename.replace(/_thumb\.(jpg|jpeg|webp|png)$/i, '').replace(/\.(jpg|jpeg|webp|png|mp4|mov|avi)$/i, '');
+        if (baseName !== media.filename) {
+          // Try to delete original backup file
+          const origFiles = [
+            baseName + '_orig.jpg',
+            baseName + '_orig.jpeg',
+            baseName + '_orig.png',
+            baseName + '_orig.webp',
+            baseName + '_orig.mp4',
+            baseName + '_orig.mov',
+            baseName + '_orig.avi'
+          ];
+
+          for (const origFile of origFiles) {
+            try {
+              await ghDeleteFile(branch, 'media/'+origFile, '删除备份: '+origFile);
+              break; // Stop after successfully deleting one
+            } catch (e) {
+              // File doesn't exist, try next
+            }
+          }
+
+          // Also try to delete video file if this is a thumbnail
+          if (media.type === 'video' && media.filename.includes('_thumb')) {
+            const videoFile = baseName + '.mp4';
+            try {
+              await ghDeleteFile(branch, 'media/'+videoFile, '删除视频: '+videoFile);
+            } catch (e) {
+              // Video file doesn't exist
+            }
+          }
+        }
       }
     }
   }
@@ -1156,13 +1194,12 @@ function renderModalMedia() {
 
   let h='';
   if(d.type==='image'){
-    // Progressive loading: blur → compressed → full quality
-    const initialSrc = d.blur || mediaSrc;
-    h = `<img src="${initialSrc}" data-compressed="${mediaSrc}" alt="" style="filter:blur(10px);transition:filter 0.3s" onload="this.style.filter='none';progressiveLoadModal(this)">`;
+    // Simple direct rendering with error handling
+    h = `<img src="${mediaSrc}" alt="" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem\\'>🎮</div>'">`;
   } else {
-    // Video: use thumbnail first, then load video
-    const initialSrc = d.thumbnail || mediaSrc;
-    h = `<video src="${mediaSrc}" controls autoplay playsinline poster="${initialSrc}"></video>`;
+    // Video with poster and error handling
+    const posterSrc = d.thumbnail || mediaSrc;
+    h = `<video src="${mediaSrc}" controls autoplay playsinline poster="${posterSrc}" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem\\'>🎮</div>'"></video>`;
   }
 
   if(m.length>1){
@@ -1171,19 +1208,6 @@ function renderModalMedia() {
     h+='</div>';
   }
   el.innerHTML=h;
-}
-
-// Progressive loading for modal images
-function progressiveLoadModal(img) {
-  if (img.dataset.compressed && img.src !== img.dataset.compressed) {
-    const compressedImg = new Image();
-    compressedImg.onload = () => {
-      img.src = img.dataset.compressed;
-      img.style.filter = 'none';
-      delete img.dataset.compressed;
-    };
-    compressedImg.src = img.dataset.compressed;
-  }
 }
 function navMedia(dir){const l=currentItem.media.length;currentMediaIndex=(currentMediaIndex+dir+l)%l;renderModalMedia();}
 function goMedia(i){currentMediaIndex=i;renderModalMedia();}
@@ -1294,45 +1318,55 @@ async function publishItem() {
         let thumbnail = null;
 
         if (m.type === 'image') {
-          // Generate blur placeholder (instant load, ~1-2KB)
-          progressText.textContent = `生成预览 ${i + 1}/${totalFiles}...`;
-          progressFill.style.width = Math.round(((i + 0.1) / totalFiles) * 100) + '%';
-          const blurPlaceholder = await generateBlurPlaceholder(m.file);
-
           // Ultra-compress image (150px, 35%, WebP)
           progressText.textContent = `压缩图片 ${i + 1}/${totalFiles}...`;
-          progressFill.style.width = Math.round(((i + 0.3) / totalFiles) * 100) + '%';
-          let compressedBase64 = null;
+          progressFill.style.width = Math.round(((i + 0.2) / totalFiles) * 100) + '%';
+          let compressedFilename = filename;
           try {
             const compressedBlob = await compressImage(m.file);
-            compressedBase64 = await fileToBase64(compressedBlob);
+            compressedFilename = `${itemId}_${i}_thumb.${compressedBlob.type.includes('webp')?'webp':'jpg'}`;
+            const compressedBase64 = await fileToBase64(compressedBlob);
+            const compressedContent = compressedBase64.split(',')[1];
+            await ghWriteBinaryFile(branch, 'media/'+compressedFilename, compressedContent, '上传压缩图: '+compressedFilename);
           } catch(e) {
-            console.warn('Compression failed:', e);
+            console.warn('Compression failed, using original:', e);
+            // Fallback: upload original as compressed
+            const base64 = await fileToBase64(m.file);
+            const base64Content = base64.split(',')[1];
+            await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传图片: '+filename);
           }
 
           // Upload original as backup (no progress text)
-          const base64 = await fileToBase64(m.file);
-          const base64Content = base64.split(',')[1];
-          await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传原图: '+filename);
+          progressText.textContent = `备份原图 ${i + 1}/${totalFiles}...`;
+          const origBase64 = await fileToBase64(m.file);
+          const origContent = origBase64.split(',')[1];
+          const origFilename = `${itemId}_${i}_orig.${ext}`;
+          await ghWriteBinaryFile(branch, 'media/'+origFilename, origContent, '备份原图: '+origFilename);
           progressFill.style.width = Math.round(((i + 0.9) / totalFiles) * 100) + '%';
 
-          // Store compressed version in JSON for instant display
-          compressedUrl = compressedBase64; // Base64 embedded in JSON
+          // Store compressed file URL (GitHub raw CDN is fast)
+          compressedUrl = getMediaUrl(branch, compressedFilename);
           mediaRefs.push({
             type: 'image',
-            filename: filename,
-            url: compressedBase64, // Embedded base64 (instant load)
-            originalUrl: getMediaUrl(branch, filename),
-            blur: blurPlaceholder, // Tiny blur preview
+            filename: compressedFilename,
+            url: compressedUrl, // GitHub raw URL (fast CDN)
+            originalUrl: getMediaUrl(branch, origFilename),
             thumbnail: null
           });
         }
 
         if (m.type === 'video') {
-          // Generate ultra-compressed video thumbnail
+          // Generate ultra-compressed video thumbnail (320px, 45% quality)
           progressText.textContent = `生成封面 ${i + 1}/${totalFiles}...`;
           progressFill.style.width = Math.round(((i + 0.1) / totalFiles) * 100) + '%';
-          thumbnail = await generateVideoThumbnail(m.preview);
+          const thumbBlob = await generateVideoThumbnail(m.preview);
+
+          // Upload thumbnail as separate file
+          const thumbFilename = `${itemId}_${i}_thumb.jpg`;
+          const thumbBase64 = await fileToBase64(thumbBlob);
+          const thumbContent = thumbBase64.split(',')[1];
+          await ghWriteBinaryFile(branch, 'media/'+thumbFilename, thumbContent, '上传封面: '+thumbFilename);
+          const thumbUrl = getMediaUrl(branch, thumbFilename);
 
           // Upload original video as backup
           progressText.textContent = `上传视频 ${i + 1}/${totalFiles}...`;
@@ -1345,10 +1379,9 @@ async function publishItem() {
           mediaRefs.push({
             type: 'video',
             filename: filename,
-            url: thumbnail, // Embedded thumbnail
+            url: thumbUrl, // GitHub raw URL for thumbnail (fast CDN)
             originalUrl: getMediaUrl(branch, filename),
-            blur: null,
-            thumbnail: thumbnail
+            thumbnail: thumbUrl
           });
         }
 
