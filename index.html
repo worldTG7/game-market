@@ -77,6 +77,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .tag.user{background:rgba(78,205,196,.1);color:var(--teal);border-color:rgba(78,205,196,.2)}
 .card-meta-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.72rem;color:var(--text2)}
 .card-meta-owner{color:var(--teal);font-weight:500}
+.card-meta-server{color:var(--accent);font-weight:500}
 .card-meta-time{color:var(--text2)}
 .empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
 .empty-state svg{width:64px;height:64px;stroke:var(--border);fill:none;stroke-width:1.2;margin-bottom:16px}
@@ -1406,10 +1407,10 @@ function renderEveryonePanel() {
         <div class="card-tags">
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
-          ${it.server?`<span class="tag server-tag">🖥️ ${esc(it.server)}</span>`:''}
         </div>
         <div class="card-meta-row">
           ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
+          ${it.server?`<span class="card-meta-server">${esc(it.server)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
       </div>
@@ -1461,10 +1462,10 @@ function loadMoreItems() {
         <div class="card-tags">
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
-          ${it.server?`<span class="tag server-tag">🖥️ ${esc(it.server)}</span>`:''}
         </div>
         <div class="card-meta-row">
           ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
+          ${it.server?`<span class="card-meta-server">${esc(it.server)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
       </div>
@@ -1547,10 +1548,10 @@ function renderMinePanel() {
         <div class="card-tags">
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
-          ${it.server?`<span class="tag server-tag">🖥️ ${esc(it.server)}</span>`:''}
         </div>
         <div class="card-meta-row">
           ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
+          ${it.server?`<span class="card-meta-server">${esc(it.server)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
       </div>
@@ -1634,10 +1635,10 @@ function viewUserPage(username, fromModal = false) {
         <div class="card-tags">
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
-          ${it.server?`<span class="tag server-tag">🖥️ ${esc(it.server)}</span>`:''}
         </div>
         <div class="card-meta-row">
           ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
+          ${it.server?`<span class="card-meta-server">${esc(it.server)}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
       </div>
@@ -2828,6 +2829,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .modal-actions{display:flex;gap:10px;padding:16px 20px 24px;position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border)}
 .card-meta-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.72rem;color:var(--text2)}
 .card-meta-owner{color:var(--teal);font-weight:500}
+.card-meta-server{color:var(--accent);font-weight:500}
 .card-meta-time{color:var(--text2)}
 @media(min-width:420px){.card-grid{grid-template-columns:repeat(3,1fr)}}
 </style>
