@@ -1348,13 +1348,15 @@ function viewUserPage(username, fromModal = false) {
   const userItems = allItems.filter(it => it._owner === branchName && !it._deleted);
   const avatar = username ? username.charAt(0).toUpperCase() : '?';
 
+  const canShare = currentUser && currentUser.username === username;
   header.innerHTML = `
     <button class="user-page-close" onclick="closeUserPage()">✕</button>
     <div class="user-page-user-bar">
       <div class="user-page-avatar">${esc(avatar)}</div>
       <div class="user-page-name">${esc(username)}</div>
     </div>
-    <div class="user-page-count">${userItems.length} 个道具</div>`;
+    <div class="user-page-count">${userItems.length} 个道具</div>
+    ${canShare ? `<button class="share-header-btn" onclick="shareUserPage('${escJs(username)}')"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享主页</button>` : ''}`;
 
   if (!userItems.length) {
     content.innerHTML = `<div class="empty-state">
@@ -1513,6 +1515,11 @@ function shareCurrentItem() {
   if (!currentItem) { showToast('没有选中的道具','error'); return; }
   closeModal();
   openDeployModal('item', currentItem.id);
+}
+
+function shareUserPage(username) {
+  if (!username) { showToast('用户名无效','error'); return; }
+  openDeployModal('user', toBranchName(username));
 }
 
 function formatTime(t) {
@@ -2080,6 +2087,10 @@ async function deployToGitHub() {
       if (!item) throw new Error('道具不存在');
       urlParam = '?item=' + encodeURIComponent(deployItemId);
       setStep(1,'done','单品分享准备完成');
+    } else if (deployMode === 'user' && deployItemId) {
+      // User page mode - deployItemId contains the branch name (username)
+      urlParam = '?user=' + encodeURIComponent(deployItemId);
+      setStep(1,'done','用户主页分享准备完成');
     } else {
       // Homepage mode
       if(!myItems.length) throw new Error('没有可分享的道具');
