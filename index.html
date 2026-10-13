@@ -1488,7 +1488,8 @@ function openDetailById(id) {
   document.getElementById('modalInfo').innerHTML = `
     <div class="modal-title">${esc(currentItem.title)}</div>
     <div class="modal-price">${currentItem.price}</div>
-    ${currentItem.time ? `<div class="post-time" style="font-size:.75rem;color:var(--text2);margin-bottom:12px">${formatTime(currentItem.time)}${currentItem.wechat ? ` · 微信：${esc(currentItem.wechat)}` : ''}</div>` : ''}
+    ${currentItem.time ? `<div class="post-time" style="font-size:.75rem;color:var(--text2);margin-bottom:4px">${formatTime(currentItem.time)}</div>` : ''}
+    ${currentItem.wechat ? `<div style="font-size:.75rem;color:var(--text2);margin-bottom:12px">微信：${esc(currentItem.wechat)}</div>` : ''}
     <div class="modal-meta">
       ${currentItem.category?`<span class="meta-chip">${esc(currentItem.category)}</span>`:''}
       ${currentItem.game?`<span class="meta-chip">🎮 ${esc(currentItem.game)}</span>`:''}
