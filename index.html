@@ -1796,7 +1796,7 @@ function openDetailById(id, fromUserPage = false) {
     <div class="modal-price ${currentItem.priceType || 'rmb'}"><span class="price-num">${currentItem.price}</span></div>
     <div class="modal-detail-row">
       ${currentItem.server ? `<div class="modal-detail-item">服务器：${esc(currentItem.server)}</div>` : ''}
-      ${currentItem.wechat && currentItem.wechat !== '无' ? `<div class="modal-detail-item">微信：${esc(currentItem.wechat)}</div>` : ''}
+      <div class="modal-detail-item">微信：${currentItem.wechat && currentItem.wechat !== '无' ? esc(currentItem.wechat) : '貌似什么都没有留下...'}</div>
       ${currentItem.time ? `<div class="modal-detail-item">${formatTime(currentItem.time)}</div>` : ''}
     </div>
     <div class="modal-meta">
