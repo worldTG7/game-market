@@ -86,6 +86,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-server-row{font-size:.72rem;color:var(--text2);margin-top:4px;display:flex;align-items:center;gap:8px}
 .card-meta-time{color:var(--text2)}
 
+/* ===== STICKY SEARCH BAR ===== */
+.sticky-search-bar{position:sticky;top:56px;z-index:90;background:rgba(15,17,23,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:12px 16px;border-bottom:1px solid var(--border);display:none}
+.sticky-search-bar.active{display:block}
+
 /* ===== SEARCH BOX ===== */
 .search-box{margin-bottom:12px;padding:12px 0}
 .search-input-wrap{position:relative;display:flex;align-items:center}
@@ -382,6 +386,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <button class="auth-btn" id="authBtnHeader" onclick="openLogin()">登录 / 注册</button>
     </div>
   </header>
+
+  <!-- Sticky Search Bar -->
+  <div class="sticky-search-bar" id="stickySearchBar"></div>
 
   <!-- 看大家 -->
   <section class="panel active" id="panelEveryone">
@@ -1364,12 +1371,87 @@ function switchTab(tab) {
   document.getElementById(panelMap[tab]).classList.add('active');
   document.getElementById('headerSub').textContent = '免费分享，请勿上传隐私信息';
   updateHeader(); // 更新分享按钮显示状态
+  updateStickySearchBar(tab); // 更新固定搜索栏
   if (tab==='everyone') {
     // 仅在数据未加载时才拉取，避免覆盖本地点赞
     if (!isDataLoaded) loadAllItems();
   }
   if (tab==='mine') { loadMyItems(); }
   if (tab==='upload') { updateUploadPanel(); }
+}
+
+function updateStickySearchBar(tab) {
+  const bar = document.getElementById('stickySearchBar');
+  if (!bar) return;
+
+  if (tab === 'everyone') {
+    bar.innerHTML = searchBoxHTML('everyoneSearch', '搜索道具...', 'everyoneServerFilter');
+    bar.classList.add('active');
+
+    // Restore search term and bind event listener
+    if (everyoneSearchTerm) {
+      const input = document.getElementById('everyoneSearch');
+      if (input) input.value = everyoneSearchTerm;
+      const clearBtn = document.getElementById('everyoneSearchClear');
+      if (clearBtn) clearBtn.classList.add('show');
+    }
+    onSearchInput('everyoneSearch', 'everyoneServerFilter', () => allItems.filter(it => !it._deleted), (filtered) => {
+      everyoneSearchTerm = document.getElementById('everyoneSearch').value.trim();
+      const container = document.getElementById('everyoneCards');
+      if (container) {
+        container.innerHTML = renderCardGrid(filtered.slice(0, PAGE_SIZE), 'everyoneGrid');
+      }
+    });
+  } else if (tab === 'mine') {
+    bar.innerHTML = searchBoxHTML('mineSearch', '搜索我的道具...', 'mineServerFilter');
+    bar.classList.add('active');
+
+    // Restore search term and bind event listener
+    if (mineSearchTerm) {
+      const input = document.getElementById('mineSearch');
+      if (input) input.value = mineSearchTerm;
+      const clearBtn = document.getElementById('mineSearchClear');
+      if (clearBtn) clearBtn.classList.add('show');
+    }
+    onSearchInput('mineSearch', 'mineServerFilter', () => {
+      return (myItems.length ? myItems : allItems.filter(it => it._owner === toBranchName(currentUser.username))).filter(it => !it._deleted);
+    }, (filtered) => {
+      mineSearchTerm = document.getElementById('mineSearch').value.trim();
+      const container = document.getElementById('mineCards');
+      if (container) {
+        if (!filtered.length) {
+          container.innerHTML = `<div class="empty-state" style="padding:40px 20px"><p>没有找到匹配的道具</p></div>`;
+        } else {
+          let html = '<div class="card-grid">';
+          filtered.forEach(it => {
+            const th = renderCardThumb(it);
+            html += `<div class="card" onclick="openDetailById('${esc(it.id)}', true)">
+              <button class="card-delete" onclick="event.stopPropagation();deleteMyItem('${esc(it.id)}')" title="删除">×</button>
+              ${th}
+              <div class="card-body">
+                <div class="card-title">${esc(it.title)}</div>
+                <div class="card-price ${it.priceType || 'rmb'}"><span class="price-num">${it.price}</span></div>
+                <div class="card-tags">
+                  ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
+                  ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
+                </div>
+                <div class="card-meta-row">
+                  ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
+                  ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
+                </div>
+                ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
+              </div>
+            </div>`;
+          });
+          html += '</div>';
+          container.innerHTML = html;
+        }
+      }
+    });
+  } else {
+    bar.innerHTML = '';
+    bar.classList.remove('active');
+  }
 }
 
 // Show loading skeleton state
@@ -1603,9 +1685,8 @@ function renderEveryonePanel() {
     return;
   }
 
-  // Search box with server filter
-  let h = searchBoxHTML('everyoneSearch', '搜索道具...', 'everyoneServerFilter');
-  h += '<div id="everyoneCards">';
+  // Only render cards container (search bar is in sticky header)
+  let h = '<div id="everyoneCards">';
 
   // Filter by search term and server
   const display = filterBySearchAndServer(allDisplay, everyoneSearchTerm, everyoneServerFilter);
@@ -1626,21 +1707,6 @@ function renderEveryonePanel() {
   }
 
   c.innerHTML = h;
-
-  // Restore search term and bind event listener
-  if (everyoneSearchTerm) {
-    const input = document.getElementById('everyoneSearch');
-    if (input) input.value = everyoneSearchTerm;
-    const clearBtn = document.getElementById('everyoneSearchClear');
-    if (clearBtn) clearBtn.classList.add('show');
-  }
-  onSearchInput('everyoneSearch', 'everyoneServerFilter', () => allItems.filter(it => !it._deleted), (filtered) => {
-    everyoneSearchTerm = document.getElementById('everyoneSearch').value.trim();
-    const container = document.getElementById('everyoneCards');
-    if (container) {
-      container.innerHTML = renderCardGrid(filtered.slice(0, PAGE_SIZE), 'everyoneGrid');
-    }
-  });
 
   // Setup infinite scroll
   if (display.length > PAGE_SIZE) {
@@ -1744,9 +1810,8 @@ function renderMinePanel() {
 
   const allDisplay = (myItems.length ? myItems : allItems.filter(it => it._owner === toBranchName(currentUser.username))).filter(it => !it._deleted);
 
-  // 搜索框（含服务器筛选）
-  let h = searchBoxHTML('mineSearch', '搜索我的道具...', 'mineServerFilter');
-  h += '<div id="mineCards">';
+  // Only render cards container (search bar is in sticky header)
+  let h = '<div id="mineCards">';
 
   // 根据搜索词和服务器筛选
   const display = filterBySearchAndServer(allDisplay, mineSearchTerm, mineServerFilter);
@@ -1786,52 +1851,6 @@ function renderMinePanel() {
   }
   h += '</div>';
   c.innerHTML = h;
-
-  // 恢复搜索词和服务器筛选状态并绑定事件监听
-  if (mineSearchTerm) {
-    const input = document.getElementById('mineSearch');
-    if (input) input.value = mineSearchTerm;
-    const clearBtn = document.getElementById('mineSearchClear');
-    if (clearBtn) clearBtn.classList.add('show');
-  }
-  if (mineServerFilter) {
-    setServerFilter('mineServerFilter', mineServerFilter);
-  }
-  onSearchInput('mineSearch', 'mineServerFilter', () => {
-    return (myItems.length ? myItems : allItems.filter(it => it._owner === toBranchName(currentUser.username))).filter(it => !it._deleted);
-  }, (filtered) => {
-    mineSearchTerm = document.getElementById('mineSearch').value.trim();
-    const container = document.getElementById('mineCards');
-    if (container) {
-      if (!filtered.length) {
-        container.innerHTML = `<div class="empty-state" style="padding:40px 20px"><p>没有找到匹配的道具</p></div>`;
-      } else {
-        let html = '<div class="card-grid">';
-        filtered.forEach(it => {
-          const th = renderCardThumb(it);
-          html += `<div class="card" onclick="openDetailById('${esc(it.id)}', true)">
-            <button class="card-delete" onclick="event.stopPropagation();deleteMyItem('${esc(it.id)}')" title="删除">×</button>
-            ${th}
-            <div class="card-body">
-              <div class="card-title">${esc(it.title)}</div>
-              <div class="card-price ${it.priceType || 'rmb'}"><span class="price-num">${it.price}</span></div>
-              <div class="card-tags">
-                ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
-                ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
-              </div>
-              <div class="card-meta-row">
-                ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
-                ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
-              </div>
-              ${it.server?`<div class="card-server-row">🖥️ ${esc(it.server)}</div>`:''}
-            </div>
-          </div>`;
-        });
-        html += '</div>';
-        container.innerHTML = html;
-      }
-    }
-  });
 }
 
 async function deleteMyItem(itemId) {
@@ -3197,6 +3216,7 @@ render();
   // Start as guest (all pages have full functionality)
   isGuest = true;
   updateHeader();
+  updateStickySearchBar('everyone'); // Initialize sticky search bar for default tab
   document.getElementById('headerSub').textContent = '免费分享，请勿上传隐私信息';
   updateUploadPanel();
   // Don't call renderEveryonePanel/renderMinePanel here - HTML already has loading indicators
