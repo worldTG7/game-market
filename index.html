@@ -1396,7 +1396,9 @@ function renderMinePanel() {
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
         </div>
-        ${it.time?`<div class="card-time">${formatTime(it.time)}</div>`:''}
+        <div class="card-meta-row">
+          ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
+        </div>
       </div>
     </div>`;
   });
@@ -1479,7 +1481,9 @@ function viewUserPage(username, fromModal = false) {
           ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
         </div>
-        ${it.time?`<div class="card-time">${esc(it.time)}</div>`:''}
+        <div class="card-meta-row">
+          ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
+        </div>
       </div>
     </div>`;
   });
