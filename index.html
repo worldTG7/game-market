@@ -1548,25 +1548,20 @@ async function publishItem() {
         let thumbnail = null;
 
         if (m.type === 'image') {
-          // Ultra-compress image (150px, 35%, WebP)
+          // Ultra-compress image (150px, 35%, WebP) — embed base64 directly in JSON
           progressText.textContent = `压缩图片 ${i + 1}/${totalFiles}...`;
           progressFill.style.width = Math.round(((i + 0.2) / totalFiles) * 100) + '%';
-          let compressedFilename = filename;
+
+          let thumbDataUrl = null;
           try {
             const compressedBlob = await compressImage(m.file);
-            compressedFilename = `${itemId}_${i}_thumb.${compressedBlob.type.includes('webp')?'webp':'jpg'}`;
-            const compressedBase64 = await fileToBase64(compressedBlob);
-            const compressedContent = compressedBase64.split(',')[1];
-            await ghWriteBinaryFile(branch, 'media/'+compressedFilename, compressedContent, '上传压缩图: '+compressedFilename);
+            thumbDataUrl = await fileToBase64(compressedBlob);
           } catch(e) {
-            console.warn('Compression failed, using original:', e);
-            // Fallback: upload original as compressed
-            const base64 = await fileToBase64(m.file);
-            const base64Content = base64.split(',')[1];
-            await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传图片: '+filename);
+            console.warn('Compression failed:', e);
+            thumbDataUrl = await fileToBase64(m.file);
           }
 
-          // Upload original as backup (no progress text)
+          // Upload original as backup
           progressText.textContent = `备份原图 ${i + 1}/${totalFiles}...`;
           const origBase64 = await fileToBase64(m.file);
           const origContent = origBase64.split(',')[1];
@@ -1574,13 +1569,11 @@ async function publishItem() {
           await ghWriteBinaryFile(branch, 'media/'+origFilename, origContent, '备份原图: '+origFilename);
           progressFill.style.width = Math.round(((i + 0.9) / totalFiles) * 100) + '%';
 
-          // Store compressed file URL (GitHub raw CDN is fast)
-          compressedUrl = getMediaUrl(branch, compressedFilename);
+          // Store base64 data URL directly — no external fetch needed to display
           mediaRefs.push({
             type: 'image',
-            filename: compressedFilename,
-            url: compressedUrl, // GitHub raw URL (fast CDN)
-            originalUrl: getMediaUrl(branch, origFilename),
+            filename: origFilename,
+            url: thumbDataUrl,    // base64 data URL, loads instantly
             thumbnail: null
           });
         }
@@ -1589,14 +1582,7 @@ async function publishItem() {
           // Generate ultra-compressed video thumbnail (320px, 45% quality)
           progressText.textContent = `生成封面 ${i + 1}/${totalFiles}...`;
           progressFill.style.width = Math.round(((i + 0.1) / totalFiles) * 100) + '%';
-          const thumbBlob = await generateVideoThumbnail(m.preview);
-
-          // Upload thumbnail as separate file
-          const thumbFilename = `${itemId}_${i}_thumb.jpg`;
-          const thumbBase64 = await fileToBase64(thumbBlob);
-          const thumbContent = thumbBase64.split(',')[1];
-          await ghWriteBinaryFile(branch, 'media/'+thumbFilename, thumbContent, '上传封面: '+thumbFilename);
-          const thumbUrl = getMediaUrl(branch, thumbFilename);
+          const thumbDataUrl = await generateVideoThumbnail(m.preview);
 
           // Upload original video as backup
           progressText.textContent = `上传视频 ${i + 1}/${totalFiles}...`;
@@ -1606,12 +1592,12 @@ async function publishItem() {
           await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传视频: '+filename);
           progressFill.style.width = Math.round(((i + 0.9) / totalFiles) * 100) + '%';
 
+          // Store base64 thumbnail directly in JSON
           mediaRefs.push({
             type: 'video',
             filename: filename,
-            url: thumbUrl, // GitHub raw URL for thumbnail (fast CDN)
-            originalUrl: getMediaUrl(branch, filename),
-            thumbnail: thumbUrl
+            url: thumbDataUrl,     // base64 thumbnail, loads instantly
+            thumbnail: thumbDataUrl
           });
         }
 
