@@ -1393,7 +1393,7 @@ function viewUserPage(username, fromModal = false) {
       <div class="user-page-name">${esc(username)}</div>
       <div class="user-page-count">${userItems.length} 个道具</div>
     </div>
-    ${canShare ? `<button class="share-header-btn" onclick="shareUserPage('${escJs(username)}')"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享</button>` : ''}`;
+    ${canShare ? `<button class="share-header-btn" onclick="shareUserPage('${escJs(username)}')"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享主页</button>` : ''}`;
 
   if (!userItems.length) {
     content.innerHTML = `<div class="empty-state">
