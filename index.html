@@ -1005,6 +1005,9 @@ function setCachedItems(items) {
 }
 
 async function loadAllItems() {
+  // Mark data as loaded immediately to prevent blocking render
+  isDataLoaded = true;
+
   // STEP 1: Show cached data immediately (instant)
   const cachedItems = getCachedItems();
   let showedCache = false;
@@ -1017,7 +1020,6 @@ async function loadAllItems() {
       allItems.push(...localOnly);
     }
     allItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
-    isDataLoaded = true;
     renderEveryonePanel();
     renderMinePanel();
     showedCache = true;
@@ -1084,9 +1086,6 @@ async function loadAllItems() {
       renderMinePanel();
       console.log('✅ 数据已更新，', allItems.length, '个道具（已过滤删除项）');
     }
-
-    // Always mark data as loaded after API completes
-    isDataLoaded = true;
 
     // Update cache (only non-deleted items)
     setCachedItems(activeItems);
