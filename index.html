@@ -1862,10 +1862,10 @@ async function deleteMyItem(itemId) {
   if (!confirm('确定要删除此道具吗？')) return;
 
   item._deleted = true;
+  showToast('✅ 删除成功，预计1-3分钟后完全生效','success');
 
   try {
     await saveItem(item);
-    showToast('✅ 删除成功，预计1-3分钟后完全生效','success');
     renderMinePanel();
     await loadAllItems();
   } catch(e) {
