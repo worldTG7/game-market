@@ -1117,8 +1117,12 @@ function lazyLoadImages() {
 // ================================================================
 let everyonePage = 0;
 const PAGE_SIZE = 20;
+let isViewingUserPage = false;
 
 function renderEveryonePanel() {
+  // 如果正在查看用户页，跳过渲染，避免覆盖用户页内容
+  if (isViewingUserPage) return;
+
   const c = document.getElementById('everyoneContent');
   const display = allItems.filter(it => !it._deleted);
   if (!display.length) {
@@ -1302,19 +1306,13 @@ async function deleteMyItem(itemId) {
 // VIEW USER PAGE (查看某个用户的主页)
 // ================================================================
 function viewUserPage(username) {
+  // 设置标志，防止后台渲染覆盖用户页
+  isViewingUserPage = true;
+
   const header = document.getElementById('userPageHeader');
   // 确保传入的是分支名格式
   const branchName = toBranchName(username);
-  console.log('查看用户页:', username, '分支名:', branchName);
-  const userItems = allItems.filter(it => {
-    const ownerBranch = it._owner;
-    const match = ownerBranch === branchName && !it._deleted;
-    if (!match) {
-      console.log('  过滤掉:', it.title, 'owner:', ownerBranch, '期望:', branchName);
-    }
-    return match;
-  });
-  console.log('匹配到', userItems.length, '个道具');
+  const userItems = allItems.filter(it => it._owner === branchName && !it._deleted);
 
   header.style.display = 'flex';
   header.innerHTML = `
@@ -1352,6 +1350,8 @@ function viewUserPage(username) {
 }
 
 function closeUserPage() {
+  // 重置用户页标志，恢复正常渲染
+  isViewingUserPage = false;
   document.getElementById('userPageHeader').style.display = 'none';
   renderEveryonePanel();
 }
