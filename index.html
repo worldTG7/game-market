@@ -1473,7 +1473,7 @@ function viewUserPage(username, fromModal = false) {
   userItems.forEach(it => {
     const th = renderCardThumb(it);
     // 在用户页不显示用户头像标签，避免无限套娃
-    h += `<div class="card" onclick="openDetailById('${esc(it.id)}')">
+    h += `<div class="card" onclick="openDetailById('${esc(it.id)}', true)">
       ${th}
       <div class="card-body">
         <div class="card-title">${esc(it.title)}</div>
@@ -1575,7 +1575,7 @@ async function confirmDeleteItem(idx) {
 // ================================================================
 let currentMediaIndex=0, currentItem=null;
 
-function openDetailById(id) {
+function openDetailById(id, fromUserPage = false) {
   currentItem = allItems.find(it => it.id === id) || myItems.find(it => it.id === id);
   if (!currentItem) { showToast('道具不存在','error'); return; }
   currentMediaIndex = 0;
@@ -1586,8 +1586,7 @@ function openDetailById(id) {
   const closeBtn = '<button class="modal-close" onclick="closeModal()">✕</button>';
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
-    const isUserPageVisible = document.getElementById('userPageOverlay').classList.contains('show');
-    const userClickHandler = (currentItem._owner && !isUserPageVisible) ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)"` : '';
+    const userClickHandler = (currentItem._owner && !fromUserPage) ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)"` : '';
     userBar.innerHTML = `
       <div class="user-info" ${userClickHandler}>
         ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
