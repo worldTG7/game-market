@@ -1383,13 +1383,21 @@ function viewUserPage(username, fromModal = false) {
   content.innerHTML = h;
   overlay.classList.add('show');
   document.body.style.overflow = 'hidden';
+  history.pushState({userPage:true}, '');
+  _userPagePushed = true;
 }
 
-function closeUserPage() {
+function closeUserPage(fromPopstate = false) {
   // 重置用户页标志，恢复正常渲染
   isViewingUserPage = false;
   document.getElementById('userPageOverlay').classList.remove('show');
   document.body.style.overflow = '';
+
+  // 如果是点击 ✕ 关闭，需要回退 history
+  if (!fromPopstate && _userPagePushed) {
+    _userPagePushed = false;
+    history.back();
+  }
 
   // 恢复之前的上下文
   if (userPageReturnContext && userPageReturnContext.type === 'modal') {
@@ -1489,6 +1497,8 @@ function openDetailById(id) {
   }
   document.getElementById('modalOverlay').classList.add('show');
   document.body.style.overflow='hidden';
+  history.pushState({modal:true}, '');
+  _modalPushed = true;
 }
 
 function shareCurrentItem() {
@@ -1565,7 +1575,32 @@ function checkScrollHint(){
   }
 }
 
-function closeModal(e){if(e&&e.target!==document.getElementById('modalOverlay'))return;document.getElementById('modalOverlay').classList.remove('show');document.body.style.overflow='';const v=document.querySelector('.modal-media video');if(v)v.pause();}
+let _modalPushed=false, _userPagePushed=false;
+
+// 全局 popstate 监听：手机返回键/左滑触发时关闭覆盖层
+window.addEventListener('popstate', function(e) {
+  const userOverlay = document.getElementById('userPageOverlay');
+  const modalOverlay = document.getElementById('modalOverlay');
+  // 优先关闭用户页，再关闭道具详情
+  if (userOverlay.classList.contains('show')) {
+    _userPagePushed = false;
+    closeUserPage(true);
+    return;
+  }
+  if (modalOverlay.classList.contains('show')) {
+    _modalPushed = false;
+    closeModal();
+    return;
+  }
+});
+
+function closeModal(e){
+  if(e&&e.target!==document.getElementById('modalOverlay'))return;
+  document.getElementById('modalOverlay').classList.remove('show');
+  document.body.style.overflow='';
+  const v=document.querySelector('.modal-media video');if(v)v.pause();
+  if(_modalPushed){_modalPushed=false;history.back();}
+}
 function contactSeller(){
   if(currentItem._owner) showToast('卖家: '+currentItem._owner+'，请在群内联系','success');
   else showToast('请通过群聊联系发布者','success');
