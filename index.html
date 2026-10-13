@@ -777,7 +777,14 @@ function shareMainPage() {
     return;
   }
   const branchName = toBranchName(currentUser.username);
-  openDeployModal('user', branchName);
+  // 直接复制远程分享链接，无需部署
+  const url = 'https://worldtg7.github.io/game-market/?user=' + encodeURIComponent(branchName);
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('分享链接已复制','success');
+  }).catch(() => {
+    // fallback: 弹出提示让用户手动复制
+    prompt('复制以下链接分享：', url);
+  });
 }
 
 // ================================================================
@@ -1581,35 +1588,27 @@ function openDetailById(id) {
 function shareCurrentItem() {
   if (!currentItem) { showToast('没有选中的道具','error'); return; }
   closeModal();
-  // 未登录用户直接复制链接分享，无需部署
-  if (!currentUser) {
-    const url = location.origin + location.pathname + '?item=' + encodeURIComponent(currentItem.id);
-    navigator.clipboard.writeText(url).then(() => {
-      showToast('分享链接已复制','success');
-    }).catch(() => {
-      // fallback: 弹出提示让用户手动复制
-      prompt('复制以下链接分享：', url);
-    });
-    return;
-  }
-  openDeployModal('item', currentItem.id);
+  // 所有用户都直接复制远程分享链接，无需部署
+  const url = 'https://worldtg7.github.io/game-market/?item=' + encodeURIComponent(currentItem.id);
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('分享链接已复制','success');
+  }).catch(() => {
+    // fallback: 弹出提示让用户手动复制
+    prompt('复制以下链接分享：', url);
+  });
 }
 
 function shareUserPage(username) {
   if (!username) { showToast('用户名无效','error'); return; }
   const branchName = toBranchName(username);
-  // 未登录用户直接复制链接分享，无需部署
-  if (!currentUser) {
-    const url = location.origin + location.pathname + '?user=' + encodeURIComponent(branchName);
-    navigator.clipboard.writeText(url).then(() => {
-      showToast('分享链接已复制','success');
-    }).catch(() => {
-      // fallback: 弹出提示让用户手动复制
-      prompt('复制以下链接分享：', url);
-    });
-    return;
-  }
-  openDeployModal('user', branchName);
+  // 所有用户都直接复制远程分享链接，无需部署
+  const url = 'https://worldtg7.github.io/game-market/?user=' + encodeURIComponent(branchName);
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('分享链接已复制','success');
+  }).catch(() => {
+    // fallback: 弹出提示让用户手动复制
+    prompt('复制以下链接分享：', url);
+  });
 }
 
 function formatTime(t) {
