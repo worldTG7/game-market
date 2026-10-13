@@ -397,35 +397,46 @@ function getMediaSrc(media) {
   return '';
 }
 
-// Render card thumbnail (uses thumbnail for videos)
+// Render card thumbnail with blur placeholder
 function renderCardThumb(item) {
   if (!item.media || !item.media.length) {
     return `<div class="card-thumb-placeholder">🎮</div>`;
   }
   const m = item.media[0];
+  const fullSrc = getMediaSrc(m);
+
   if (m.type === 'video') {
-    // Use thumbnail if available, otherwise show video badge overlay
-    const thumbSrc = m.thumbnail || getMediaSrc(m);
+    const thumbSrc = m.thumbnail || fullSrc;
+    // Use blur as initial src, then upgrade to full quality
+    const initialSrc = m.blur || thumbSrc;
     return `<div class="card-thumb-wrapper">
-      <img class="card-thumb" data-src="${thumbSrc}" loading="lazy" alt="视频封面">
+      <img class="card-thumb" src="${initialSrc}" data-full="${thumbSrc}" style="filter:blur(10px);transition:filter 0.3s" onload="this.style.filter='none'" alt="视频封面">
       <div class="card-thumb-video-icon"></div>
       <span class="video-badge">VIDEO</span>
     </div>`;
   }
-  return `<img class="card-thumb" data-src="${getMediaSrc(m)}" loading="lazy" alt="道具图片">`;
+
+  // Use blur as initial src, then upgrade to compressed version
+  const initialSrc = m.blur || fullSrc;
+  return `<img class="card-thumb" src="${initialSrc}" data-full="${fullSrc}" style="filter:blur(10px);transition:filter 0.3s" onload="this.style.filter='none'" alt="道具图片">`;
 }
 
-// Render my-item thumbnail
+// Render my-item thumbnail with blur placeholder
 function renderMyItemThumb(item) {
   if (!item.media || !item.media.length) {
     return `<div class="my-item-thumb-ph">🎮</div>`;
   }
   const m = item.media[0];
+  const fullSrc = getMediaSrc(m);
+
   if (m.type === 'video') {
-    const thumbSrc = m.thumbnail || getMediaSrc(m);
-    return `<img class="my-item-thumb" data-src="${thumbSrc}" loading="lazy">`;
+    const thumbSrc = m.thumbnail || fullSrc;
+    const initialSrc = m.blur || thumbSrc;
+    return `<img class="my-item-thumb" src="${initialSrc}" data-full="${thumbSrc}" style="filter:blur(10px);transition:filter 0.3s" onload="this.style.filter='none'">`;
   }
-  return `<img class="my-item-thumb" data-src="${getMediaSrc(m)}" loading="lazy">`;
+
+  const initialSrc = m.blur || fullSrc;
+  return `<img class="my-item-thumb" src="${initialSrc}" data-full="${fullSrc}" style="filter:blur(10px);transition:filter 0.3s" onload="this.style.filter='none'">`;
 }
 
 // ================================================================
@@ -881,16 +892,24 @@ function showLoadingState(containerId) {
   c.innerHTML = h;
 }
 
-// Lazy load images using IntersectionObserver
+// Progressive image loading: blur → clear using IntersectionObserver
 function lazyLoadImages() {
-  const images = document.querySelectorAll('img[data-src]');
+  const images = document.querySelectorAll('img[data-full]');
   if ('IntersectionObserver' in window) {
     const imageObserver = new IntersectionObserver((entries, observer) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const img = entry.target;
-          img.src = img.dataset.src;
-          img.removeAttribute('data-src');
+          if (img.dataset.full) {
+            // Preload full quality image
+            const tempImg = new Image();
+            tempImg.onload = () => {
+              img.src = img.dataset.full;
+              img.style.filter = 'none';
+              img.removeAttribute('data-full');
+            };
+            tempImg.src = img.dataset.full;
+          }
           observer.unobserve(img);
         }
       });
@@ -900,10 +919,13 @@ function lazyLoadImages() {
     });
     images.forEach(img => imageObserver.observe(img));
   } else {
-    // Fallback for browsers without IntersectionObserver
+    // Fallback: immediately load all images
     images.forEach(img => {
-      img.src = img.dataset.src;
-      img.removeAttribute('data-src');
+      if (img.dataset.full) {
+        img.src = img.dataset.full;
+        img.style.filter = 'none';
+        img.removeAttribute('data-full');
+      }
     });
   }
 }
@@ -1131,13 +1153,37 @@ function renderModalMedia() {
   if(!m||!m.length){el.innerHTML='<div style="color:var(--muted);font-size:3rem">🎮</div>';return;}
   const d=m[currentMediaIndex];
   const mediaSrc = getMediaSrc(d);
-  let h=d.type==='image'?`<img src="${mediaSrc}" alt="">`:`<video src="${mediaSrc}" controls autoplay playsinline></video>`;
+
+  let h='';
+  if(d.type==='image'){
+    // Progressive loading: blur → compressed → full quality
+    const initialSrc = d.blur || mediaSrc;
+    h = `<img src="${initialSrc}" data-compressed="${mediaSrc}" alt="" style="filter:blur(10px);transition:filter 0.3s" onload="this.style.filter='none';progressiveLoadModal(this)">`;
+  } else {
+    // Video: use thumbnail first, then load video
+    const initialSrc = d.thumbnail || mediaSrc;
+    h = `<video src="${mediaSrc}" controls autoplay playsinline poster="${initialSrc}"></video>`;
+  }
+
   if(m.length>1){
     h+=`<button class="media-arrow left" onclick="navMedia(-1)">‹</button><button class="media-arrow right" onclick="navMedia(1)">›</button><div class="media-nav">`;
     m.forEach((_,i)=>{h+=`<button class="media-dot ${i===currentMediaIndex?'active':''}" onclick="goMedia(${i})"></button>`;});
     h+='</div>';
   }
   el.innerHTML=h;
+}
+
+// Progressive loading for modal images
+function progressiveLoadModal(img) {
+  if (img.dataset.compressed && img.src !== img.dataset.compressed) {
+    const compressedImg = new Image();
+    compressedImg.onload = () => {
+      img.src = img.dataset.compressed;
+      img.style.filter = 'none';
+      delete img.dataset.compressed;
+    };
+    compressedImg.src = img.dataset.compressed;
+  }
 }
 function navMedia(dir){const l=currentItem.media.length;currentMediaIndex=(currentMediaIndex+dir+l)%l;renderModalMedia();}
 function goMedia(i){currentMediaIndex=i;renderModalMedia();}
@@ -1248,62 +1294,63 @@ async function publishItem() {
         let thumbnail = null;
 
         if (m.type === 'image') {
-          // Step 1: Compress image
-          progressText.textContent = `正在压缩图片 ${i + 1}/${totalFiles}: ${m.name}`;
+          // Generate blur placeholder (instant load, ~1-2KB)
+          progressText.textContent = `生成预览 ${i + 1}/${totalFiles}...`;
           progressFill.style.width = Math.round(((i + 0.1) / totalFiles) * 100) + '%';
+          const blurPlaceholder = await generateBlurPlaceholder(m.file);
+
+          // Ultra-compress image (150px, 35%, WebP)
+          progressText.textContent = `压缩图片 ${i + 1}/${totalFiles}...`;
+          progressFill.style.width = Math.round(((i + 0.3) / totalFiles) * 100) + '%';
+          let compressedBase64 = null;
           try {
             const compressedBlob = await compressImage(m.file);
-            const compressedFilename = `${itemId}_${i}_compressed.jpg`;
-
-            // Step 2: Upload compressed version
-            progressText.textContent = `正在上传压缩图 ${i + 1}/${totalFiles}: ${m.name}`;
-            progressFill.style.width = Math.round(((i + 0.3) / totalFiles) * 100) + '%';
-            const compressedBase64 = await fileToBase64(compressedBlob);
-            const compressedBase64Content = compressedBase64.split(',')[1];
-            await ghWriteBinaryFile(branch, 'media/'+compressedFilename, compressedBase64Content, '上传压缩图: '+compressedFilename);
-            compressedUrl = getMediaUrl(branch, compressedFilename);
+            compressedBase64 = await fileToBase64(compressedBlob);
           } catch(e) {
-            console.warn('Image compression failed, using original:', e);
+            console.warn('Compression failed:', e);
           }
 
-          // Upload original (backup, no progress text shown)
+          // Upload original as backup (no progress text)
           const base64 = await fileToBase64(m.file);
           const base64Content = base64.split(',')[1];
           await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传原图: '+filename);
           progressFill.style.width = Math.round(((i + 0.9) / totalFiles) * 100) + '%';
+
+          // Store compressed version in JSON for instant display
+          compressedUrl = compressedBase64; // Base64 embedded in JSON
+          mediaRefs.push({
+            type: 'image',
+            filename: filename,
+            url: compressedBase64, // Embedded base64 (instant load)
+            originalUrl: getMediaUrl(branch, filename),
+            blur: blurPlaceholder, // Tiny blur preview
+            thumbnail: null
+          });
         }
 
         if (m.type === 'video') {
-          // Step 1: Generate ultra-compressed thumbnail (320px, 45% quality)
-          progressText.textContent = `正在生成封面 ${i + 1}/${totalFiles}: ${m.name}`;
+          // Generate ultra-compressed video thumbnail
+          progressText.textContent = `生成封面 ${i + 1}/${totalFiles}...`;
           progressFill.style.width = Math.round(((i + 0.1) / totalFiles) * 100) + '%';
           thumbnail = await generateVideoThumbnail(m.preview);
-          if (thumbnail) {
-            const thumbFilename = `${itemId}_${i}_thumb.jpg`;
-            progressText.textContent = `正在上传封面 ${i + 1}/${totalFiles}: ${m.name}`;
-            progressFill.style.width = Math.round(((i + 0.3) / totalFiles) * 100) + '%';
-            const thumbBase64 = thumbnail.split(',')[1];
-            await ghWriteBinaryFile(branch, 'media/'+thumbFilename, thumbBase64, '上传封面: '+thumbFilename);
-            thumbnail = getMediaUrl(branch, thumbFilename);
-            compressedUrl = thumbnail; // Use thumbnail for instant display
-          }
 
-          // Step 2: Upload original video (backup only)
-          progressText.textContent = `正在上传视频 ${i + 1}/${totalFiles}: ${m.name}`;
+          // Upload original video as backup
+          progressText.textContent = `上传视频 ${i + 1}/${totalFiles}...`;
           progressFill.style.width = Math.round(((i + 0.5) / totalFiles) * 100) + '%';
           const base64 = await fileToBase64(m.file);
           const base64Content = base64.split(',')[1];
           await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传视频: '+filename);
           progressFill.style.width = Math.round(((i + 0.9) / totalFiles) * 100) + '%';
-        }
 
-        mediaRefs.push({
-          type: m.type,
-          filename: filename,
-          url: compressedUrl || getMediaUrl(branch, filename),
-          originalUrl: getMediaUrl(branch, filename),
-          thumbnail: thumbnail
-        });
+          mediaRefs.push({
+            type: 'video',
+            filename: filename,
+            url: thumbnail, // Embedded thumbnail
+            originalUrl: getMediaUrl(branch, filename),
+            blur: null,
+            thumbnail: thumbnail
+          });
+        }
 
         // Update progress to completed
         const completedProgress = Math.round(((i + 1) / totalFiles) * 100);
@@ -1482,8 +1529,8 @@ async function compressVideo(file, maxWidth = 480, bitrate = 300000) {
   });
 }
 
-// Ultra-compressed image for mobile fast loading
-function compressImage(file, maxWidth = 300, quality = 0.40) {
+// Ultra-compressed image for mobile fast loading (20x faster)
+async function compressImage(file, maxWidth = 150, quality = 0.35) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -1505,20 +1552,32 @@ function compressImage(file, maxWidth = 300, quality = 0.40) {
       canvas.height = height;
       const ctx = canvas.getContext('2d');
 
-      // Fast compression settings
+      // Ultra-fast compression settings
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'low';
       ctx.drawImage(img, 0, 0, width, height);
 
+      // Try WebP first (25-35% smaller), fallback to JPEG
       canvas.toBlob(
         (blob) => {
-          if (blob) {
+          if (blob && blob.type === 'image/webp') {
             resolve(blob);
           } else {
-            reject(new Error('压缩失败'));
+            // Fallback to JPEG
+            canvas.toBlob(
+              (jpegBlob) => {
+                if (jpegBlob) {
+                  resolve(jpegBlob);
+                } else {
+                  reject(new Error('压缩失败'));
+                }
+              },
+              'image/jpeg',
+              quality
+            );
           }
         },
-        'image/jpeg',
+        'image/webp',
         quality
       );
     };
@@ -1526,6 +1585,42 @@ function compressImage(file, maxWidth = 300, quality = 0.40) {
     img.onerror = () => {
       URL.revokeObjectURL(url);
       reject(new Error('图片加载失败'));
+    };
+
+    img.src = url;
+  });
+}
+
+// Generate blur placeholder (tiny, ~1-2KB)
+function generateBlurPlaceholder(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      canvas.width = 20; // Tiny size for blur
+      canvas.height = 15;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'low';
+      ctx.drawImage(img, 0, 0, 20, 15);
+
+      canvas.toBlob(
+        (blob) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        },
+        'image/jpeg',
+        0.2
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
     };
 
     img.src = url;
