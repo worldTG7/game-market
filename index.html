@@ -626,14 +626,34 @@ async function ghReadRaw(branch, path) {
   } catch { return null; }
 }
 async function ghWriteFile(branch, path, content, msg) {
-  let sha = null;
-  try {
-    const d = await ghGet(`/repos/${GH.owner}/${GH.repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`);
-    sha = d.sha;
-  } catch {}
-  const body = { message:msg, content:btoa(unescape(encodeURIComponent(typeof content==='string'?content:JSON.stringify(content)))), branch };
-  if (sha) body.sha = sha;
-  return ghPut(`/repos/${GH.owner}/${GH.repo}/contents/${encodeURIComponent(path)}`, body);
+  const maxRetries = 3;
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      let sha = null;
+      try {
+        const d = await ghGet(`/repos/${GH.owner}/${GH.repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`);
+        sha = d.sha;
+      } catch {}
+      const body = { message:msg, content:btoa(unescape(encodeURIComponent(typeof content==='string'?content:JSON.stringify(content)))), branch };
+      if (sha) body.sha = sha;
+      return await ghPut(`/repos/${GH.owner}/${GH.repo}/contents/${encodeURIComponent(path)}`, body);
+    } catch (e) {
+      lastError = e;
+      // If it's a SHA conflict (409), retry
+      if (e.message && e.message.includes('is at') && e.message.includes('but expected')) {
+        // Wait a bit before retry
+        await new Promise(resolve => setTimeout(resolve, 500));
+        continue;
+      }
+      // Other errors, throw immediately
+      throw e;
+    }
+  }
+
+  // All retries failed
+  throw lastError;
 }
 async function ghDeleteFile(branch, path, msg) {
   try {
