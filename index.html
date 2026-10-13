@@ -1859,7 +1859,7 @@ async function deleteMyItem(itemId) {
   if (!item) { showToast('道具不存在','error'); return; }
 
   // 显示确认对话框
-  if (!confirm(`确定要删除此道具吗？\n\n删除操作将在1-3分钟内生效，在此期间道具将不再显示。`)) return;
+  if (!confirm('确定要删除此道具吗？')) return;
 
   item._deleted = true;
 
