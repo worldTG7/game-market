@@ -84,8 +84,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .modal{width:100%;min-height:100dvh;max-width:100%;background:var(--bg);animation:slideUp .25s ease;display:flex;flex-direction:column;position:relative}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{display:none}
-.modal-close{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.85);font-size:1rem;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:210;transition:all .15s ease}
-.modal-close:active{transform:scale(.9);background:rgba(0,0,0,.6);color:#fff}
+.modal-close{position:fixed;top:calc(env(safe-area-inset-top,0px) + 16px);right:16px;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,rgba(0,0,0,.5),rgba(0,0,0,.35));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.95);font-size:1.1rem;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:210;transition:all .2s ease;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.modal-close:hover{transform:scale(1.05);background:linear-gradient(135deg,rgba(0,0,0,.6),rgba(0,0,0,.45));border-color:rgba(255,255,255,.35);box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.modal-close:active{transform:scale(.92);background:linear-gradient(135deg,rgba(0,0,0,.7),rgba(0,0,0,.55));color:#fff}
 .modal-user-bar{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;flex-shrink:0}
 .modal-user-bar .user-link{display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background .2s}
 .modal-user-bar .user-link:active{background:rgba(255,255,255,.05)}
@@ -198,8 +199,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 /* ===== USER PAGE OVERLAY ===== */
 .user-page-overlay{position:fixed;inset:0;z-index:200;background:var(--bg);display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .user-page-overlay.show{display:block}
-.user-page-close{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.45);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.85);font-size:1rem;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:210;transition:all .15s ease}
-.user-page-close:active{transform:scale(.9);background:rgba(0,0,0,.6);color:#fff}
+.user-page-close{position:fixed;top:calc(env(safe-area-inset-top,0px) + 16px);right:16px;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,rgba(0,0,0,.5),rgba(0,0,0,.35));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.95);font-size:1.1rem;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:210;transition:all .2s ease;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+.user-page-close:hover{transform:scale(1.05);background:linear-gradient(135deg,rgba(0,0,0,.6),rgba(0,0,0,.45));border-color:rgba(255,255,255,.35);box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.user-page-close:active{transform:scale(.92);background:linear-gradient(135deg,rgba(0,0,0,.7),rgba(0,0,0,.55));color:#fff}
 .user-page-header{position:sticky;top:0;z-index:10;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;flex-shrink:0}
 .user-page-user-bar{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:6px}
 .user-page-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8f5c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.8rem;flex-shrink:0}
@@ -1498,9 +1500,9 @@ function openDetailById(id) {
   // Add share button if user is logged in and owns this item
   const actionsEl = document.getElementById('modalActions');
   if (currentUser && currentItem._owner === toBranchName(currentUser.username)) {
-    actionsEl.innerHTML = `<button class="btn btn-teal" onclick="shareCurrentItem()"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;vertical-align:-3px;margin-right:4px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享此道具</button><button class="btn btn-secondary" onclick="closeModal()">关闭</button>`;
+    actionsEl.innerHTML = `<button class="btn btn-teal" onclick="shareCurrentItem()" style="flex:1"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;vertical-align:-3px;margin-right:4px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享此道具</button>`;
   } else {
-    actionsEl.innerHTML = `<button class="btn btn-secondary" onclick="closeModal()">关闭</button>`;
+    actionsEl.innerHTML = '';
   }
   document.getElementById('modalOverlay').classList.add('show');
   document.body.style.overflow='hidden';
