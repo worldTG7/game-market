@@ -89,6 +89,16 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .upload-progress-bar{flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;min-width:60px}
 .upload-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#ff9a5c);border-radius:3px;transition:width .3s ease;width:0%}
 
+/* ===== SERVER SELECTOR ===== */
+.server-selector{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.server-option{flex:0 1 auto}
+.server-option input[type="radio"]{display:none}
+.server-option label{display:block;padding:8px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.85rem;color:var(--text2);cursor:pointer;transition:all .2s;text-align:center;white-space:nowrap}
+.server-option input[type="radio"]:checked + label{background:var(--primary);border-color:var(--primary);color:#fff}
+.server-custom-input{display:none;width:100%;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:.9rem;margin-top:8px}
+.server-custom-input.show{display:block}
+.server-custom-input::placeholder{color:var(--text2);opacity:.6}
+
 /* ===== LIKE BUTTON ===== */
 .like-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:var(--surface);border:1px solid var(--border);border-radius:20px;color:var(--text2);font-size:.8rem;cursor:pointer;transition:all .2s;font-weight:500;position:relative;overflow:visible}
 .like-btn:hover{background:var(--surface-hover);border-color:var(--accent);color:var(--accent)}
@@ -367,6 +377,32 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <div class="form-section"><label class="form-label"><span class="req">*</span> 道具介绍</label><input class="form-input" id="fTitle" placeholder="输入介绍" maxlength="100"></div>
       <div class="form-section"><label class="form-label"><span class="req">*</span> 价格</label><div style="display:flex;gap:8px"><div class="price-type-toggle"><button type="button" class="price-type-btn active" data-type="rmb" onclick="selectPriceType('rmb')"><span class="rmb-icon">¥</span></button><button type="button" class="price-type-btn gold-btn" data-type="gold" onclick="selectPriceType('gold')"><span class="gold-icon-wrapper"><img src="data:image/png;base64,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" alt="gold"></span></button></div><input type="hidden" id="fPriceType" value="rmb"><input class="form-input" id="fPrice" type="number" min="0" step="1" placeholder="输入价格"></div></div>
       <div class="form-section"><label class="form-label">微信号</label><input class="form-input" id="fWechat" placeholder="选填，方便买家联系" maxlength="50"></div>
+      <div class="form-section">
+        <label class="form-label"><span class="req">*</span> 区服</label>
+        <div class="server-selector" id="serverSelector">
+          <div class="server-option">
+            <input type="radio" name="server" id="server1" value="天启黎明" checked>
+            <label for="server1">天启黎明</label>
+          </div>
+          <div class="server-option">
+            <input type="radio" name="server" id="server2" value="无尽星芒">
+            <label for="server2">无尽星芒</label>
+          </div>
+          <div class="server-option">
+            <input type="radio" name="server" id="server3" value="圣者苍海">
+            <label for="server3">圣者苍海</label>
+          </div>
+          <div class="server-option">
+            <input type="radio" name="server" id="server4" value="神圣花海">
+            <label for="server4">神圣花海</label>
+          </div>
+          <div class="server-option">
+            <input type="radio" name="server" id="serverCustom" value="custom">
+            <label for="serverCustom">其它</label>
+          </div>
+        </div>
+        <input class="server-custom-input" id="serverCustomInput" type="text" placeholder="请输入区服名称" maxlength="50">
+      </div>
       <div class="form-section">
         <label class="form-label">图片 / 视频</label>
         <div class="upload-zone" id="uploadZone">
@@ -1974,6 +2010,30 @@ function contactSeller(){
 }
 
 // ================================================================
+// SERVER SELECTOR
+// ================================================================
+const serverCustomInput = document.getElementById('serverCustomInput');
+document.querySelectorAll('input[name="server"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    if (this.value === 'custom') {
+      serverCustomInput.classList.add('show');
+      serverCustomInput.focus();
+    } else {
+      serverCustomInput.classList.remove('show');
+    }
+  });
+});
+
+function getSelectedServer() {
+  const selected = document.querySelector('input[name="server"]:checked');
+  if (!selected) return null;
+  if (selected.value === 'custom') {
+    return serverCustomInput.value.trim();
+  }
+  return selected.value;
+}
+
+// ================================================================
 // FILE UPLOAD
 // ================================================================
 const fileInput=document.getElementById('fileInput');
@@ -2047,8 +2107,10 @@ async function publishItem() {
   if(!(await validateSession())) return;
   const title=document.getElementById('fTitle').value.trim();
   const price=parseFloat(document.getElementById('fPrice').value);
+  const server=getSelectedServer();
   if(!title){showToast('请填写道具介绍','error');return;}
   if(isNaN(price)||price<0){showToast('请填写有效价格','error');return;}
+  if(!server){showToast('请选择或填写区服','error');return;}
 
   const itemId = 'item_'+Date.now();
   const branch = toBranchName(currentUser.username);
@@ -2158,6 +2220,7 @@ async function publishItem() {
     price,
     priceType,
     wechat,
+    server,
     category:'',
     game:'',
     desc:title,
@@ -2561,6 +2624,11 @@ function resetForm(){
   document.getElementById('fTitle').value='';
   document.getElementById('fPrice').value='';
   document.getElementById('fWechat').value='';
+  // Reset server selector to default
+  document.getElementById('server1').checked = true;
+  const serverCustomInput = document.getElementById('serverCustomInput');
+  serverCustomInput.value = '';
+  serverCustomInput.classList.remove('show');
   uploadedMedia=[];
   renderUploadPreviews();
 }
