@@ -192,13 +192,16 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
 @media(min-width:420px){.card-grid{grid-template-columns:repeat(3,1fr)}}
 
-/* ===== USER PAGE HEADER ===== */
-.user-page-header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 16px;margin-bottom:40px;display:flex;align-items:center;gap:16px}
+/* ===== USER PAGE OVERLAY ===== */
+.user-page-overlay{position:fixed;inset:0;z-index:200;background:var(--bg);display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.user-page-overlay.show{display:block}
+.user-page-header{position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--border);padding:16px 16px;display:flex;align-items:center;gap:16px}
 .user-page-back{width:40px;height:40px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s ease}
 .user-page-back:active{transform:scale(.9);background:var(--border);color:var(--accent)}
 .user-page-info{flex:1;min-width:0;display:flex;align-items:center;gap:12px}
 .user-page-name{font-size:1.15rem;font-weight:700;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.4}
 .user-page-count{font-size:.8rem;color:var(--muted);opacity:.8;line-height:1.4}
+.user-page-content{padding:20px 16px}
 @keyframes pulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.1);opacity:.8}}
 .card-time{font-size:.62rem;color:var(--muted);margin-top:4px}
 .tag.user{cursor:pointer;transition:all .2s}
@@ -225,7 +228,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
   <!-- 看大家 -->
   <section class="panel active" id="panelEveryone">
-    <div id="userPageHeader" style="display:none"></div>
     <div id="everyoneContent"><div class="empty-state"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 00-8 0v2"/></svg><p>暂无道具上架<br>点击右上角「登录/注册」发布你的道具</p></div></div>
   </section>
 
@@ -321,6 +323,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
     </div>
   </div>
+</div>
+
+<!-- USER PAGE OVERLAY -->
+<div class="user-page-overlay" id="userPageOverlay">
+  <div class="user-page-header" id="userPageHeader"></div>
+  <div class="user-page-content" id="userPageContent"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1316,12 +1324,14 @@ function viewUserPage(username) {
   // 设置标志，防止后台渲染覆盖用户页
   isViewingUserPage = true;
 
+  const overlay = document.getElementById('userPageOverlay');
   const header = document.getElementById('userPageHeader');
+  const content = document.getElementById('userPageContent');
+
   // 确保传入的是分支名格式
   const branchName = toBranchName(username);
   const userItems = allItems.filter(it => it._owner === branchName && !it._deleted);
 
-  header.style.display = 'flex';
   header.innerHTML = `
     <button class="user-page-back" onclick="closeUserPage()">←</button>
     <div class="user-page-info">
@@ -1329,11 +1339,12 @@ function viewUserPage(username) {
       <div class="user-page-count">${userItems.length} 个道具</div>
     </div>`;
 
-  const c = document.getElementById('everyoneContent');
   if (!userItems.length) {
-    c.innerHTML = `<div class="empty-state">
+    content.innerHTML = `<div class="empty-state">
       <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 00-8 0v2"/></svg>
       <p>该用户暂无道具</p></div>`;
+    overlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
     return;
   }
   let h = '<div class="card-grid">';
@@ -1354,13 +1365,16 @@ function viewUserPage(username) {
     </div>`;
   });
   h += '</div>';
-  c.innerHTML = h;
+  content.innerHTML = h;
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
 }
 
 function closeUserPage() {
   // 重置用户页标志，恢复正常渲染
   isViewingUserPage = false;
-  document.getElementById('userPageHeader').style.display = 'none';
+  document.getElementById('userPageOverlay').classList.remove('show');
+  document.body.style.overflow = '';
   renderEveryonePanel();
 }
 
