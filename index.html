@@ -85,6 +85,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{display:none}
 .modal-close{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.2);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:210}
+.modal-user-bar{padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.modal-user-bar .user-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8f5c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.9rem;flex-shrink:0}
+.modal-user-bar .user-name{font-size:.9rem;font-weight:600;color:var(--text)}
+.modal-user-bar .post-time{font-size:.75rem;color:var(--text2);margin-left:auto}
 .modal-media{width:100%;flex:1;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;min-height:0;z-index:1}
 .modal-media img,.modal-media video{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;user-select:none;-webkit-user-drag:none;transition:opacity .25s ease}
 .media-nav{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5}
@@ -308,6 +312,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-user-bar" id="modalUserBar"></div>
     <div class="modal-media" id="modalMedia"></div>
     <div class="modal-info" id="modalInfo"></div>
     <div class="modal-actions" id="modalActions">
@@ -1410,6 +1415,20 @@ function openDetailById(id) {
   if (!currentItem) { showToast('道具不存在','error'); return; }
   currentMediaIndex = 0;
   renderModalMedia();
+
+  // Populate user bar at top
+  const userBar = document.getElementById('modalUserBar');
+  if (currentItem._owner || currentItem.time) {
+    const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
+    userBar.innerHTML = `
+      ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name" style="cursor:pointer" onclick="closeModal();viewUserPage('${escJs(currentItem._owner)}');switchTab('everyone')">${esc(currentItem._owner)}</div>` : ''}
+      ${currentItem.time ? `<div class="post-time">${formatTime(currentItem.time)}</div>` : ''}
+    `;
+    userBar.style.display = 'flex';
+  } else {
+    userBar.style.display = 'none';
+  }
+
   document.getElementById('modalInfo').innerHTML = `
     <div class="modal-title">${esc(currentItem.title)}</div>
     <div class="modal-price">${currentItem.price}</div>
@@ -1417,8 +1436,6 @@ function openDetailById(id) {
     <div class="modal-meta">
       ${currentItem.category?`<span class="meta-chip">${esc(currentItem.category)}</span>`:''}
       ${currentItem.game?`<span class="meta-chip">🎮 ${esc(currentItem.game)}</span>`:''}
-      ${currentItem.time?`<span class="meta-chip">📅 ${formatTime(currentItem.time)}</span>`:''}
-      ${currentItem._owner?`<span class="meta-chip" style="cursor:pointer" onclick="closeModal();viewUserPage('${escJs(currentItem._owner)}');switchTab('everyone')">👤 ${esc(currentItem._owner)}</span>`:''}
       ${(currentItem.tags||[]).map(t=>`<span class="meta-chip">${esc(t)}</span>`).join('')}
     </div>`;
   // Add share button if user is logged in and owns this item
