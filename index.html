@@ -1478,7 +1478,6 @@ function openDetailById(id) {
     const userClickHandler = currentItem._owner ? `onclick="viewUserPage('${escJs(currentItem._owner)}', true)"` : '';
     userBar.innerHTML = `
       ${currentItem._owner ? `<div class="user-link" ${userClickHandler}><div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div></div>` : ''}
-      ${currentItem.time ? `<div class="post-time">${formatTime(currentItem.time)}</div>` : ''}
     `;
     userBar.style.display = 'flex';
   } else {
@@ -1488,7 +1487,7 @@ function openDetailById(id) {
   document.getElementById('modalInfo').innerHTML = `
     <div class="modal-title">${esc(currentItem.title)}</div>
     <div class="modal-price">${currentItem.price}</div>
-    <div class="modal-desc">${esc(currentItem.desc||currentItem.title)}</div>
+    ${currentItem.time ? `<div class="post-time" style="font-size:.75rem;color:var(--text2);margin-bottom:12px">${formatTime(currentItem.time)}</div>` : ''}
     <div class="modal-meta">
       ${currentItem.category?`<span class="meta-chip">${esc(currentItem.category)}</span>`:''}
       ${currentItem.game?`<span class="meta-chip">🎮 ${esc(currentItem.game)}</span>`:''}
