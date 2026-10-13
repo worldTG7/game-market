@@ -616,6 +616,13 @@ async function ghReadFile(branch, path) {
     return JSON.parse(decodeURIComponent(escape(atob(d.content))));
   } catch { return null; }
 }
+async function ghReadFileDirect(branch, path) {
+  // Direct GitHub API only (bypass CDN cache, ensures fresh data)
+  try {
+    const d = await ghGet(`/repos/${GH.owner}/${GH.repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`);
+    return JSON.parse(decodeURIComponent(escape(atob(d.content))));
+  } catch { return null; }
+}
 async function ghReadRaw(branch, path) {
   // Try CDN first (fast), fallback to API
   const cdnResult = await cdnReadText(branch, path);
@@ -2167,8 +2174,8 @@ async function syncLikes() {
   if (!ownerBranch) return;
 
   try {
-    // 1. 从远端读取最新数据
-    const remoteData = await ghReadFile(ownerBranch, 'data/'+itemId+'.json');
+    // 1. 直接从 GitHub API 读取最新数据（绕过 CDN 缓存）
+    const remoteData = await ghReadFileDirect(ownerBranch, 'data/'+itemId+'.json');
     if (!remoteData) { console.warn('远端道具不存在'); return; }
 
     // 2. 累加本地增量到远端最新值
