@@ -91,6 +91,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .search-clear.show{display:block}
 .search-result-count{font-size:.75rem;color:var(--text2);margin-top:6px;padding-left:4px}
 
+/* ===== SERVER FILTER ===== */
+.server-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.server-filter-btn{padding:6px 12px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:.85rem;cursor:pointer;transition:all .2s}
+.server-filter-btn:hover{border-color:var(--accent);color:var(--accent)}
+.server-filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
 .empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
 .empty-state svg{width:64px;height:64px;stroke:var(--border);fill:none;stroke-width:1.2;margin-bottom:16px}
 .empty-state p{font-size:.9rem;line-height:1.6}
@@ -1386,14 +1392,77 @@ let isViewingUserPage = false;
 let userPageReturnContext = null; // 记录用户页返回上下文
 
 // ================================================================
-// SEARCH
+// SEARCH & FILTER
 // ================================================================
 let everyoneSearchTerm = '';
+let everyoneServerFilter = '';
 let mineSearchTerm = '';
+let mineServerFilter = '';
 let userPageSearchTerm = '';
+let userPageServerFilter = '';
 
-function searchBoxHTML(id, placeholder) {
-  return `<div class="search-box">
+const SERVER_FILTERS = ['天启黎明', '无尽星芒', '圣者苍海', '神圣花海', '其它'];
+
+function serverFilterHTML(id) {
+  let h = `<div class="server-filter" id="${id}">`;
+  h += `<button class="server-filter-btn active" data-server="" onclick="setServerFilter('${id}', '')">全部</button>`;
+  SERVER_FILTERS.forEach(s => {
+    h += `<button class="server-filter-btn" data-server="${s}" onclick="setServerFilter('${id}', '${s}')">${s}</button>`;
+  });
+  h += '</div>';
+  return h;
+}
+
+function setServerFilter(filterId, server) {
+  const container = document.getElementById(filterId);
+  if (!container) return;
+
+  // Update active state
+  container.querySelectorAll('.server-filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.server === server);
+  });
+
+  // Update filter state
+  if (filterId === 'everyoneServerFilter') {
+    everyoneServerFilter = server;
+    const input = document.getElementById('everyoneSearch');
+    if (input) input.dispatchEvent(new Event('input'));
+  } else if (filterId === 'mineServerFilter') {
+    mineServerFilter = server;
+    const input = document.getElementById('mineSearch');
+    if (input) input.dispatchEvent(new Event('input'));
+  } else if (filterId === 'userPageServerFilter') {
+    userPageServerFilter = server;
+    const input = document.getElementById('userPageSearch');
+    if (input) input.dispatchEvent(new Event('input'));
+  }
+}
+
+function filterBySearchAndServer(items, term, serverFilter) {
+  let filtered = items;
+
+  // Apply server filter
+  if (serverFilter) {
+    if (serverFilter === '其它') {
+      // "其它" means not one of the 4 preset servers
+      const presetServers = ['天启黎明', '无尽星芒', '圣者苍海', '神圣花海'];
+      filtered = filtered.filter(it => !it.server || !presetServers.includes(it.server));
+    } else {
+      filtered = filtered.filter(it => it.server === serverFilter);
+    }
+  }
+
+  // Apply search term
+  if (term) {
+    filtered = filtered.filter(it => it.title && it.title.includes(term));
+  }
+
+  return filtered;
+}
+
+function searchBoxHTML(id, placeholder, filterId) {
+  return `${serverFilterHTML(filterId)}
+  <div class="search-box">
     <div class="search-input-wrap">
       <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" id="${id}" placeholder="${placeholder}" autocomplete="off">
@@ -1403,12 +1472,7 @@ function searchBoxHTML(id, placeholder) {
   </div>`;
 }
 
-function filterBySearch(items, term) {
-  if (!term) return items;
-  return items.filter(it => it.title && it.title.includes(term));
-}
-
-function onSearchInput(inputId, getItems, renderCards) {
+function onSearchInput(inputId, filterId, getItems, renderCards) {
   const input = document.getElementById(inputId);
   const clearBtn = document.getElementById(inputId + 'Clear');
   const countEl = document.getElementById(inputId + 'Count');
@@ -1417,8 +1481,17 @@ function onSearchInput(inputId, getItems, renderCards) {
   input.addEventListener('input', function() {
     const term = this.value.trim();
     clearBtn.classList.toggle('show', term.length > 0);
-    const filtered = filterBySearch(getItems(), term);
-    if (term) {
+
+    // Get current server filter
+    let serverFilter = '';
+    if (filterId === 'everyoneServerFilter') serverFilter = everyoneServerFilter;
+    else if (filterId === 'mineServerFilter') serverFilter = mineServerFilter;
+    else if (filterId === 'userPageServerFilter') serverFilter = userPageServerFilter;
+
+    const filtered = filterBySearchAndServer(getItems(), term, serverFilter);
+    const hasFilter = term || serverFilter;
+
+    if (hasFilter) {
       countEl.style.display = 'block';
       countEl.textContent = `找到 ${filtered.length} 个结果`;
     } else {
@@ -1486,12 +1559,12 @@ function renderEveryonePanel() {
     return;
   }
 
-  // Search box
-  let h = searchBoxHTML('everyoneSearch', '搜索道具...');
+  // Search box with server filter
+  let h = searchBoxHTML('everyoneSearch', '搜索道具...', 'everyoneServerFilter');
   h += '<div id="everyoneCards">';
 
-  // Filter by search term
-  const display = filterBySearch(allDisplay, everyoneSearchTerm);
+  // Filter by search term and server
+  const display = filterBySearchAndServer(allDisplay, everyoneSearchTerm, everyoneServerFilter);
 
   // Reset pagination
   everyonePage = 0;
@@ -1517,7 +1590,7 @@ function renderEveryonePanel() {
     const clearBtn = document.getElementById('everyoneSearchClear');
     if (clearBtn) clearBtn.classList.add('show');
   }
-  onSearchInput('everyoneSearch', () => allItems.filter(it => !it._deleted), (filtered) => {
+  onSearchInput('everyoneSearch', 'everyoneServerFilter', () => allItems.filter(it => !it._deleted), (filtered) => {
     everyoneSearchTerm = document.getElementById('everyoneSearch').value.trim();
     const container = document.getElementById('everyoneCards');
     if (container) {
@@ -1627,12 +1700,12 @@ function renderMinePanel() {
 
   const allDisplay = (myItems.length ? myItems : allItems.filter(it => it._owner === toBranchName(currentUser.username))).filter(it => !it._deleted);
 
-  // 搜索框
-  let h = searchBoxHTML('mineSearch', '搜索我的道具...');
+  // 搜索框（含服务器筛选）
+  let h = searchBoxHTML('mineSearch', '搜索我的道具...', 'mineServerFilter');
   h += '<div id="mineCards">';
 
-  // 根据搜索词过滤
-  const display = filterBySearch(allDisplay, mineSearchTerm);
+  // 根据搜索词和服务器筛选
+  const display = filterBySearchAndServer(allDisplay, mineSearchTerm, mineServerFilter);
 
   if (!display.length) {
     if (!allDisplay.length) {
@@ -1670,14 +1743,17 @@ function renderMinePanel() {
   h += '</div>';
   c.innerHTML = h;
 
-  // 恢复搜索词并绑定事件监听
+  // 恢复搜索词和服务器筛选状态并绑定事件监听
   if (mineSearchTerm) {
     const input = document.getElementById('mineSearch');
     if (input) input.value = mineSearchTerm;
     const clearBtn = document.getElementById('mineSearchClear');
     if (clearBtn) clearBtn.classList.add('show');
   }
-  onSearchInput('mineSearch', () => {
+  if (mineServerFilter) {
+    setServerFilter('mineServerFilter', mineServerFilter);
+  }
+  onSearchInput('mineSearch', 'mineServerFilter', () => {
     return (myItems.length ? myItems : allItems.filter(it => it._owner === toBranchName(currentUser.username))).filter(it => !it._deleted);
   }, (filtered) => {
     mineSearchTerm = document.getElementById('mineSearch').value.trim();
@@ -1777,12 +1853,12 @@ function viewUserPage(username, fromModal = false) {
     return;
   }
 
-  // 搜索框
-  let h = searchBoxHTML('userPageSearch', `搜索 ${username} 的道具...`);
+  // 搜索框（含服务器筛选）
+  let h = searchBoxHTML('userPageSearch', `搜索 ${username} 的道具...`, 'userPageServerFilter');
   h += '<div id="userPageCards">';
 
-  // 根据搜索词过滤
-  const display = filterBySearch(userItems, userPageSearchTerm);
+  // 根据搜索词和服务器过滤
+  const display = filterBySearchAndServer(userItems, userPageSearchTerm, userPageServerFilter);
 
   if (!display.length) {
     h += `<div class="empty-state" style="padding:40px 20px"><p>没有找到匹配的道具</p></div>`;
@@ -1813,14 +1889,17 @@ function viewUserPage(username, fromModal = false) {
   h += '</div>';
   content.innerHTML = h;
 
-  // 恢复搜索词并绑定事件监听
+  // 恢复搜索词和服务器筛选状态并绑定事件监听
   if (userPageSearchTerm) {
     const input = document.getElementById('userPageSearch');
     if (input) input.value = userPageSearchTerm;
     const clearBtn = document.getElementById('userPageSearchClear');
     if (clearBtn) clearBtn.classList.add('show');
   }
-  onSearchInput('userPageSearch', () => userItems, (filtered) => {
+  if (userPageServerFilter) {
+    setServerFilter('userPageServerFilter', userPageServerFilter);
+  }
+  onSearchInput('userPageSearch', 'userPageServerFilter', () => userItems, (filtered) => {
     userPageSearchTerm = document.getElementById('userPageSearch').value.trim();
     const container = document.getElementById('userPageCards');
     if (container) {
