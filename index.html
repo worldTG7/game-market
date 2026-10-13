@@ -1586,11 +1586,17 @@ function openDetailById(id, fromUserPage = false) {
   const closeBtn = '<button class="modal-close" onclick="closeModal()">✕</button>';
   if (currentItem._owner || currentItem.time) {
     const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
-    // Use global variable + direct onclick for maximum reliability
-    window._detailUserCanClick = currentItem._owner && !fromUserPage;
-    window._detailUserName = currentItem._owner || '';
+    // Defensive: ensure fromUserPage is exactly true (not just truthy)
+    const canClickUser = !!(currentItem._owner && fromUserPage !== true);
+    // Store click handler globally for reliable access
+    if (canClickUser) {
+      const ownerName = currentItem._owner;
+      window._detailUserClickHandler = function() { viewUserPage(ownerName, true); };
+    } else {
+      window._detailUserClickHandler = null;
+    }
     userBar.innerHTML = `
-      <div class="user-info" onclick="if(window._detailUserCanClick)viewUserPage(window._detailUserName,true)" style="${window._detailUserCanClick ? 'cursor:pointer' : ''}">
+      <div class="user-info" onclick="window._detailUserClickHandler && window._detailUserClickHandler()" style="${canClickUser ? 'cursor:pointer' : 'cursor:default'}">
         ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
       </div>
       <div class="actions">${closeBtn}</div>
