@@ -1593,8 +1593,7 @@ function openDetailById(id) {
 
 function shareCurrentItem() {
   if (!currentItem) { showToast('没有选中的道具','error'); return; }
-  closeModal();
-  // 所有用户都直接复制远程分享链接，无需部署
+  // 直接复制远程分享链接，保持当前页面不变
   const url = 'https://worldtg7.github.io/game-market/?item=' + encodeURIComponent(currentItem.id);
   navigator.clipboard.writeText(url).then(() => {
     showToast('分享链接已复制','success');
