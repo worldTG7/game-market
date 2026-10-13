@@ -203,9 +203,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-delete{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all .2s}
 .card-delete:hover{background:var(--danger);border-color:var(--danger)}
 .card{position:relative}
-/* Lazy load fade-in animation */
-.card-thumb{opacity:0;transition:opacity .3s ease}
-.card-thumb.loaded{opacity:1}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 </style>
 </head>
@@ -1563,8 +1560,7 @@ async function publishItem() {
             thumbDataUrl = await fileToBase64(m.file);
           }
 
-          // Upload original as backup
-          progressText.textContent = `备份原图 ${i + 1}/${totalFiles}...`;
+          // Upload original as backup (no progress text shown)
           const origBase64 = await fileToBase64(m.file);
           const origContent = origBase64.split(',')[1];
           const origFilename = `${itemId}_${i}_orig.${ext}`;
