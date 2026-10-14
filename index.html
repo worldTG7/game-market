@@ -443,7 +443,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
         <div class="upload-zone" id="uploadZone">
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <span>上传图片/视频</span>
-          <input type="file" id="fileInput" multiple accept="image/*,video/mp4,video/quicktime">
+          <input type="file" id="fileInput" multiple accept="image/*">
         </div>
         <div class="upload-progress" id="uploadProgress">
           <div class="upload-progress-text" id="uploadProgressText">准备上传...</div>
@@ -2469,6 +2469,7 @@ function handleFileList(files){
   Array.from(files).forEach((file, idx)=>{
     if(file.size>50*1024*1024){showToast(file.name+' 超过50MB','error');return;}
     const isVideo=file.type.startsWith('video/');
+    if(isVideo){showToast('暂不支持视频上传','error');return;}
 
     // Show loading progress while reading file
     progressEl.classList.add('show');
@@ -2590,31 +2591,6 @@ async function doPublish(title, price, server) {
             filename: origFilename,
             url: thumbDataUrl,    // base64 data URL, loads instantly
             thumbnail: null
-          });
-        }
-
-        if (m.type === 'video') {
-          // Generate thumbnail + read video in parallel
-          progressText.textContent = `处理视频 ${i + 1}/${totalFiles}...`;
-          progressFill.style.width = Math.round(((i + 0.1) / totalFiles) * 100) + '%';
-
-          const [thumbDataUrl, base64] = await Promise.all([
-            generateVideoThumbnail(m.preview),
-            fileToBase64(m.file)
-          ]);
-
-          // Upload original video as backup
-          progressText.textContent = `上传视频 ${i + 1}/${totalFiles}...`;
-          const base64Content = base64.split(',')[1];
-          await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传视频: '+filename);
-          progressFill.style.width = Math.round(((i + 0.9) / totalFiles) * 100) + '%';
-
-          // Store base64 thumbnail directly in JSON
-          mediaRefs.push({
-            type: 'video',
-            filename: filename,
-            url: thumbDataUrl,     // base64 thumbnail, loads instantly
-            thumbnail: thumbDataUrl
           });
         }
 
