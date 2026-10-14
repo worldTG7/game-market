@@ -475,6 +475,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   </nav>
 </div>
 
+<!-- ===== AUTH OVERLAY ===== -->
+<div class="publish-overlay" id="authOverlay" style="z-index:350">
+  <div class="publish-message" id="authOverlayMsg">⏳ 处理中...</div>
+</div>
+
 <!-- ===== PUBLISH OVERLAY ===== -->
 <div class="publish-overlay" id="publishOverlay">
   <div class="publish-message">⏳ 发布中，请稍候...</div>
@@ -862,11 +867,18 @@ async function doRegister() {
 
   btn.disabled=true; btn.textContent='注册中...';
   window._authPending = true;
+  document.getElementById('authOverlay').classList.add('show');
+  document.getElementById('authOverlayMsg').textContent = '⏳ 注册中...';
   try {
     await ghEnsureRepo();
     const branch = toBranchName(username);
     msg.textContent='检查用户名...';
-    if (await ghBranchExists(branch)) { msg.className='auth-msg error'; msg.textContent='用户名已被注册'; btn.disabled=false; btn.textContent='注册'; window._authPending=false; return; }
+    if (await ghBranchExists(branch)) {
+      msg.className='auth-msg error'; msg.textContent='用户名已被注册';
+      btn.disabled=false; btn.textContent='注册'; window._authPending=false;
+      document.getElementById('authOverlay').classList.remove('show');
+      return;
+    }
 
     await ghCreateBranch(branch);
     await sleep(1500);
@@ -879,14 +891,17 @@ async function doRegister() {
     await ghWriteFile(branch, 'data/.gitkeep', '', '初始化');
 
     msg.className='auth-msg success'; msg.textContent='✅ 注册成功！正在登录...';
+    document.getElementById('authOverlayMsg').textContent = '⏳ 登录中...';
     await enterApp(username);
     window._authPending = false;
     closeLogin();
+    document.getElementById('authOverlay').classList.remove('show');
     showToast('✅ 注册成功，欢迎加入！','success');
   } catch(e) {
     window._authPending = false;
     msg.className='auth-msg error'; msg.textContent='注册失败: '+e.message;
     btn.disabled=false; btn.textContent='注册';
+    document.getElementById('authOverlay').classList.remove('show');
   }
 }
 
@@ -902,30 +917,47 @@ async function doLogin() {
 
   btn.disabled=true; btn.textContent='登录中...';
   window._authPending = true;
+  document.getElementById('authOverlay').classList.add('show');
+  document.getElementById('authOverlayMsg').textContent = '⏳ 登录中...';
   try {
     await ghEnsureRepo();
     const branch = toBranchName(username);
     msg.textContent='验证中...';
-    if (!(await ghBranchExists(branch))) { msg.className='auth-msg error'; msg.textContent='用户不存在'; btn.disabled=false; btn.textContent='登录'; window._authPending=false; return; }
+    if (!(await ghBranchExists(branch))) {
+      msg.className='auth-msg error'; msg.textContent='用户不存在';
+      btn.disabled=false; btn.textContent='登录'; window._authPending=false;
+      document.getElementById('authOverlay').classList.remove('show');
+      return;
+    }
 
     // Read .ttt (plain base64 string, not JSON)
     const raw = await ghReadRaw(branch, '.ttt');
     if (!raw) {
-      msg.className='auth-msg error'; msg.textContent='无法读取账户信息'; btn.disabled=false; btn.textContent='登录'; window._authPending=false; return;
+      msg.className='auth-msg error'; msg.textContent='无法读取账户信息';
+      btn.disabled=false; btn.textContent='登录'; window._authPending=false;
+      document.getElementById('authOverlay').classList.remove('show');
+      return;
     }
     const storedPass = decodeURIComponent(escape(atob(raw)));
 
-    if (storedPass !== pass) { msg.className='auth-msg error'; msg.textContent='密码错误'; btn.disabled=false; btn.textContent='登录'; window._authPending=false; return; }
+    if (storedPass !== pass) {
+      msg.className='auth-msg error'; msg.textContent='密码错误';
+      btn.disabled=false; btn.textContent='登录'; window._authPending=false;
+      document.getElementById('authOverlay').classList.remove('show');
+      return;
+    }
 
     msg.className='auth-msg success'; msg.textContent='✅ 登录成功';
     await enterApp(username);
     window._authPending = false;
     closeLogin();
+    document.getElementById('authOverlay').classList.remove('show');
     showToast('✅ 登录成功，欢迎回来！','success');
   } catch(e) {
     msg.className='auth-msg error'; msg.textContent='登录失败: '+e.message;
     btn.disabled=false; btn.textContent='登录';
     window._authPending = false;
+    document.getElementById('authOverlay').classList.remove('show');
   }
 }
 
