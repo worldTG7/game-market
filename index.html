@@ -2552,21 +2552,21 @@ async function publishItem() {
         let thumbnail = null;
 
         if (m.type === 'image') {
-          // Compress image (800px, 75%, WebP) — embed base64 directly in JSON
-          progressText.textContent = `压缩图片 ${i + 1}/${totalFiles}...`;
+          // Compress image + read original in parallel
+          progressText.textContent = `处理图片 ${i + 1}/${totalFiles}...`;
           progressFill.style.width = Math.round(((i + 0.2) / totalFiles) * 100) + '%';
 
-          let thumbDataUrl = null;
-          try {
-            const compressedBlob = await compressImage(m.file);
-            thumbDataUrl = await fileToBase64(compressedBlob);
-          } catch(e) {
-            console.warn('Compression failed:', e);
-            thumbDataUrl = await fileToBase64(m.file);
-          }
+          // 并行：压缩缩略图 + 读取原图base64
+          const [thumbResult, origBase64] = await Promise.all([
+            compressImage(m.file).then(b => fileToBase64(b)).catch(e => {
+              console.warn('Compression failed:', e);
+              return fileToBase64(m.file);
+            }),
+            fileToBase64(m.file)
+          ]);
+          const thumbDataUrl = thumbResult;
 
-          // Upload original as backup (no progress text shown)
-          const origBase64 = await fileToBase64(m.file);
+          // Upload original as backup
           const origContent = origBase64.split(',')[1];
           const origFilename = `${itemId}_${i}_orig.${ext}`;
           await ghWriteBinaryFile(branch, 'media/'+origFilename, origContent, '备份原图: '+origFilename);
@@ -2582,15 +2582,17 @@ async function publishItem() {
         }
 
         if (m.type === 'video') {
-          // Generate ultra-compressed video thumbnail (320px, 45% quality)
-          progressText.textContent = `生成封面 ${i + 1}/${totalFiles}...`;
+          // Generate thumbnail + read video in parallel
+          progressText.textContent = `处理视频 ${i + 1}/${totalFiles}...`;
           progressFill.style.width = Math.round(((i + 0.1) / totalFiles) * 100) + '%';
-          const thumbDataUrl = await generateVideoThumbnail(m.preview);
+
+          const [thumbDataUrl, base64] = await Promise.all([
+            generateVideoThumbnail(m.preview),
+            fileToBase64(m.file)
+          ]);
 
           // Upload original video as backup
           progressText.textContent = `上传视频 ${i + 1}/${totalFiles}...`;
-          progressFill.style.width = Math.round(((i + 0.5) / totalFiles) * 100) + '%';
-          const base64 = await fileToBase64(m.file);
           const base64Content = base64.split(',')[1];
           await ghWriteBinaryFile(branch, 'media/'+filename, base64Content, '上传视频: '+filename);
           progressFill.style.width = Math.round(((i + 0.9) / totalFiles) * 100) + '%';
@@ -2650,17 +2652,14 @@ async function publishItem() {
   resetForm();
   showToast('✅ 发布成功！数据同步需要1-3分钟，请耐心等待','success');
 
-  try {
-    await saveItem(item);
-    renderMyItems();
-    await loadAllItems();
-  } catch(e) {
-    showToast('保存失败: '+e.message,'error');
-  } finally {
-    // Hide publish overlay after last toast
-    window._publishing = false;
-    setTimeout(() => overlay.classList.remove('show'), 3000);
-  }
+  // 媒体已上传完毕、本地数据已更新，立即解除遮罩
+  window._publishing = false;
+  overlay.classList.remove('show');
+
+  // 后台同步，不阻塞用户
+  saveItem(item).catch(e => showToast('保存失败: '+e.message,'error'));
+  renderMyItems();
+  loadAllItems();
 }
 
 // 防抖定时器
