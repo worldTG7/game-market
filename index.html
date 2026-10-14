@@ -821,6 +821,11 @@ function openLogin() {
   document.getElementById('loginOverlay').classList.add('show');
   document.getElementById('loginMsg').textContent='';
   document.getElementById('regMsg').textContent='';
+  // 重置按钮状态
+  const loginBtn = document.getElementById('loginBtn');
+  if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = '登录'; }
+  const regBtn = document.getElementById('regBtn');
+  if (regBtn) { regBtn.disabled = false; regBtn.textContent = '注册'; }
 }
 function closeLogin() { document.getElementById('loginOverlay').classList.remove('show'); }
 function closeLoginOverlay(e) { if(e&&e.target===document.getElementById('loginOverlay')) closeLogin(); }
