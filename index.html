@@ -591,6 +591,7 @@ let allItems = [];       // all users' items (buy view)
 let myItems = [];        // current user's items (sell view)
 let uploadedMedia = [];
 let isDataLoaded = false; // track if initial data has been loaded
+const pendingDeletes = new Set(); // track items being deleted locally until remote sync completes
 
 // ================================================================
 // HELPERS
@@ -1025,16 +1026,8 @@ async function refreshAll() {
     myItems = [];
     isDataLoaded = false;
 
-    // Reload data
+    // Reload data (loadAllItems will filter out pendingDeletes)
     await loadAllItems();
-
-    // Re-render current panel
-    const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab;
-    if (activeTab === 'everyone') {
-      renderEveryonePanel();
-    } else if (activeTab === 'mine') {
-      renderMinePanel();
-    }
 
     showToast('刷新完成', 'success');
   } catch (e) {
@@ -1386,7 +1379,8 @@ async function loadAllItems() {
     remoteItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
 
     // Filter out deleted items before caching and display
-    const activeItems = remoteItems.filter(it => !it._deleted);
+    // Also filter out pendingDeletes (locally deleted items not yet synced to remote)
+    const activeItems = remoteItems.filter(it => !it._deleted && !pendingDeletes.has(it.id));
 
     // Mark data as loaded BEFORE render check, so render functions won't show loading
     isDataLoaded = true;
@@ -1919,6 +1913,7 @@ function deleteMyItem(itemId) {
 
   // 立即标记删除 + 更新UI
   item._deleted = true;
+  pendingDeletes.add(itemId); // 加入待删除集合，防止刷新时重新出现
   showToast('✅ 删除成功，预计1-3分钟后完全生效','success');
   renderMinePanel();
 
@@ -1931,6 +1926,8 @@ function deleteMyItem(itemId) {
       if (!(await validateSession())) return;
       await saveItem(item);
       await loadAllItems();
+      // 远端删除成功后，从待删除集合移除
+      pendingDeletes.delete(itemId);
     } catch(e) {
       showToast('删除同步失败: '+e.message,'error');
     }
