@@ -827,8 +827,8 @@ function openLogin() {
   const regBtn = document.getElementById('regBtn');
   if (regBtn) { regBtn.disabled = false; regBtn.textContent = '注册'; }
 }
-function closeLogin() { document.getElementById('loginOverlay').classList.remove('show'); }
-function closeLoginOverlay(e) { if(e&&e.target===document.getElementById('loginOverlay')) closeLogin(); }
+function closeLogin() { if (window._authPending) return; document.getElementById('loginOverlay').classList.remove('show'); }
+function closeLoginOverlay(e) { if (window._authPending) return; if(e&&e.target===document.getElementById('loginOverlay')) closeLogin(); }
 
 function switchAuthTab(tab) {
   document.getElementById('tabLogin').classList.toggle('active',tab==='login');
@@ -853,11 +853,12 @@ async function doRegister() {
   if (pass!==pass2) { msg.className='auth-msg error'; msg.textContent='两次密码不一致'; return; }
 
   btn.disabled=true; btn.textContent='注册中...';
+  window._authPending = true;
   try {
     await ghEnsureRepo();
     const branch = toBranchName(username);
     msg.textContent='检查用户名...';
-    if (await ghBranchExists(branch)) { msg.className='auth-msg error'; msg.textContent='用户名已被注册'; btn.disabled=false; btn.textContent='注册'; return; }
+    if (await ghBranchExists(branch)) { msg.className='auth-msg error'; msg.textContent='用户名已被注册'; btn.disabled=false; btn.textContent='注册'; window._authPending=false; return; }
 
     await ghCreateBranch(branch);
     await sleep(1500);
@@ -871,9 +872,11 @@ async function doRegister() {
 
     msg.className='auth-msg success'; msg.textContent='✅ 注册成功！正在登录...';
     await enterApp(username);
+    window._authPending = false;
     closeLogin();
     showToast('✅ 注册成功，欢迎加入！','success');
   } catch(e) {
+    window._authPending = false;
     msg.className='auth-msg error'; msg.textContent='注册失败: '+e.message;
     btn.disabled=false; btn.textContent='注册';
   }
@@ -890,28 +893,31 @@ async function doLogin() {
   if (!pass) { msg.className='auth-msg error'; msg.textContent='请输入密码'; return; }
 
   btn.disabled=true; btn.textContent='登录中...';
+  window._authPending = true;
   try {
     await ghEnsureRepo();
     const branch = toBranchName(username);
     msg.textContent='验证中...';
-    if (!(await ghBranchExists(branch))) { msg.className='auth-msg error'; msg.textContent='用户不存在'; btn.disabled=false; btn.textContent='登录'; return; }
+    if (!(await ghBranchExists(branch))) { msg.className='auth-msg error'; msg.textContent='用户不存在'; btn.disabled=false; btn.textContent='登录'; window._authPending=false; return; }
 
     // Read .ttt (plain base64 string, not JSON)
     const raw = await ghReadRaw(branch, '.ttt');
     if (!raw) {
-      msg.className='auth-msg error'; msg.textContent='无法读取账户信息'; btn.disabled=false; btn.textContent='登录'; return;
+      msg.className='auth-msg error'; msg.textContent='无法读取账户信息'; btn.disabled=false; btn.textContent='登录'; window._authPending=false; return;
     }
     const storedPass = decodeURIComponent(escape(atob(raw)));
 
-    if (storedPass !== pass) { msg.className='auth-msg error'; msg.textContent='密码错误'; btn.disabled=false; btn.textContent='登录'; return; }
+    if (storedPass !== pass) { msg.className='auth-msg error'; msg.textContent='密码错误'; btn.disabled=false; btn.textContent='登录'; window._authPending=false; return; }
 
     msg.className='auth-msg success'; msg.textContent='✅ 登录成功';
     await enterApp(username);
+    window._authPending = false;
     closeLogin();
     showToast('✅ 登录成功，欢迎回来！','success');
   } catch(e) {
     msg.className='auth-msg error'; msg.textContent='登录失败: '+e.message;
     btn.disabled=false; btn.textContent='登录';
+    window._authPending = false;
   }
 }
 
