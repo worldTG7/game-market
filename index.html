@@ -2529,11 +2529,17 @@ async function publishItem() {
   if(isNaN(price)||price<0){showToast('请填写有效价格','error');return;}
   if(!server){showToast('请选择或填写服务器','error');return;}
 
-  // Show publish overlay to prevent user interaction
+  // 立即显示遮罩层
   window._publishing = true;
   const overlay = document.getElementById('publishOverlay');
   overlay.classList.add('show');
 
+  // 使用 setTimeout 确保浏览器先渲染遮罩层，再执行发布流程
+  setTimeout(() => doPublish(title, price, server), 0);
+}
+
+async function doPublish(title, price, server) {
+  const overlay = document.getElementById('publishOverlay');
   const itemId = 'item_'+Date.now();
   const branch = toBranchName(currentUser.username);
 
