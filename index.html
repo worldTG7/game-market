@@ -185,6 +185,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-thumb-wrapper{position:relative;width:100%;aspect-ratio:4/3}
 
 /* ===== DETAIL MODAL ===== */
+.publish-overlay{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.publish-overlay.show{display:flex}
+.publish-message{background:var(--surface);color:var(--text);padding:24px 32px;border-radius:12px;font-size:1.1rem;box-shadow:0 4px 20px rgba(0,0,0,.3)}
 .modal-overlay{position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.85);display:none;overflow:hidden}
 .modal-overlay.show{display:block}
 .modal{width:100%;height:100dvh;max-width:100%;background:var(--bg);animation:slideUp .25s ease;display:flex;flex-direction:column;position:relative;overflow:hidden}
@@ -470,6 +473,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <span>上传</span>
     </button>
   </nav>
+</div>
+
+<!-- ===== PUBLISH OVERLAY ===== -->
+<div class="publish-overlay" id="publishOverlay">
+  <div class="publish-message">⏳ 发布中，请稍候...</div>
 </div>
 
 <!-- ===== LOGIN OVERLAY ===== -->
@@ -2483,6 +2491,11 @@ async function publishItem() {
   if(isNaN(price)||price<0){showToast('请填写有效价格','error');return;}
   if(!server){showToast('请选择或填写服务器','error');return;}
 
+  // Show publish overlay to prevent user interaction
+  window._publishing = true;
+  const overlay = document.getElementById('publishOverlay');
+  overlay.classList.add('show');
+
   const itemId = 'item_'+Date.now();
   const branch = toBranchName(currentUser.username);
 
@@ -2611,6 +2624,10 @@ async function publishItem() {
     await loadAllItems();
   } catch(e) {
     showToast('保存失败: '+e.message,'error');
+  } finally {
+    // Hide publish overlay after last toast
+    window._publishing = false;
+    setTimeout(() => overlay.classList.remove('show'), 3000);
   }
 }
 
