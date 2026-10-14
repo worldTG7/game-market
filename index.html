@@ -1330,10 +1330,15 @@ function setCachedItems(items) {
 async function loadAllItems(options = {}) {
   const skipCache = options.skipCache || false;
 
+  // 递增版本号，使旧的并发调用失效
+  const myVersion = ++loadAllItemsVersion;
+
   // STEP 1: Show cached data immediately (instant)
   let showedCache = false;
   const cachedItems = skipCache ? null : getCachedItems();
   if (cachedItems && cachedItems.length > 0) {
+    // 检查是否被更新的调用取代
+    if (myVersion !== loadAllItemsVersion) return;
     allItems = cachedItems;
     // Merge with local myItems
     if (currentUser && myItems.length) {
@@ -1370,6 +1375,8 @@ async function loadAllItems(options = {}) {
     let apiSuccess = false;
     try {
       const branches = await ghGet(`/repos/${GH.owner}/${GH.repo}/branches`);
+      // 检查是否被更新的调用取代
+      if (myVersion !== loadAllItemsVersion) { console.log('⏭️ 加载被新版本取代，跳过'); return; }
       const userBranches = branches.filter(b => b.name !== mainBranch && b.name !== 'gh-pages');
 
       // Phase 1: 只获取文件列表（不读取内容）
@@ -1377,6 +1384,9 @@ async function loadAllItems(options = {}) {
         const files = await ghListDir(b.name, 'data');
         return files.map(f => ({ branch: b.name, filename: f.name }));
       }));
+
+      // 再次检查版本
+      if (myVersion !== loadAllItemsVersion) { console.log('⏭️ 加载被新版本取代，跳过'); return; }
 
       fileResults.forEach(r => {
         if (r.status === 'fulfilled' && r.value) {
@@ -1387,12 +1397,14 @@ async function loadAllItems(options = {}) {
       apiSuccess = true;
       console.log('✅ 获取到', pendingFileList.length, '个文件（待懒加载）');
     } catch (e) {
+      if (myVersion !== loadAllItemsVersion) return;
       console.log('⚠️ API 加载失败，尝试 CDN...');
     }
 
     // Fallback to CDN index if API failed
     if (!apiSuccess && pendingFileList.length === 0) {
       const indexData = await cdnReadJson(mainBranch, 'index.json');
+      if (myVersion !== loadAllItemsVersion) return;
       if (indexData && indexData.items && Array.isArray(indexData.items)) {
         // CDN already has full data, use it directly
         remoteItems = indexData.items.map(it => ({ ...it, _owner: it._owner || 'unknown' }));
@@ -1417,9 +1429,12 @@ async function loadAllItems(options = {}) {
       }
     }
 
-    // Phase 2: 立即加载第一批（前20个文件）
+    // Phase 2: 立即加载第一批
     if (pendingFileList.length > 0) {
       const firstBatch = await loadNextBatch(PAGE_SIZE);
+
+      // 检查版本（loadNextBatch 内部可能有 await）
+      if (myVersion !== loadAllItemsVersion) { console.log('⏭️ 首批加载后被新版本取代，跳过'); return; }
 
       // Merge with local myItems
       if (currentUser && myItems.length) {
@@ -1454,6 +1469,7 @@ async function loadAllItems(options = {}) {
     }
 
   } catch(e) {
+    if (myVersion !== loadAllItemsVersion) return;
     console.error('Background refresh failed:', e);
     // Keep showing cached data if available
     if (!cachedItems || cachedItems.length === 0) {
@@ -1553,12 +1569,28 @@ function switchTab(tab) {
   document.getElementById(panelMap[tab]).classList.add('active');
   document.getElementById('headerSub').textContent = '免费分享，请勿上传隐私信息';
   updateHeader(); // 更新分享按钮显示状态
-  if (tab==='everyone') {
-    // 仅在数据未加载时才拉取，避免覆盖本地点赞
+
+  if (tab === 'everyone') {
+    // 如果正在查看用户页面，先关闭
+    if (isViewingUserPage) {
+      closeUserPage();
+    }
+
+    // 关闭用户页面后再重置分类到"全部"版本
+    selectCategory('全部');
+    everyoneSearchTerm = '';
+
+    // 确保重新渲染（closeUserPage 在 modal 上下文中不会渲染）
+    renderEveryonePanel();
+
     if (!isDataLoaded) loadAllItems();
   }
-  if (tab==='mine') { loadMyItems(); }
-  if (tab==='upload') { updateUploadPanel(); }
+  if (tab === 'mine') {
+    selectCategory('全部');
+    mineSearchTerm = '';
+    loadMyItems();
+  }
+  if (tab === 'upload') { updateUploadPanel(); }
 }
 
 function bindSearchEveryone() {
@@ -1695,6 +1727,7 @@ let pendingLoadIndex = 0;     // 当前已加载到哪个位置
 let isLazyLoading = false;    // 是否正在加载中
 let lazyLoadComplete = false; // 是否已全部加载完
 let lazyLoadCancelFlag = false; // 懒加载取消标志（刷新时置位）
+let loadAllItemsVersion = 0; // 加载版本计数器（防止并发竞态）
 let userPageReturnContext = null; // 记录用户页返回上下文
 let userPageCurrentUsername = ''; // 当前查看的用户页用户名
 
