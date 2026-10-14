@@ -197,7 +197,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .publish-message{background:var(--surface);color:var(--text);padding:24px 32px;border-radius:12px;font-size:1.1rem;box-shadow:0 4px 20px rgba(0,0,0,.3)}
 .modal-overlay{position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.85);display:none;overflow:hidden}
 .modal-overlay.show{display:block}
-.modal{width:100%;height:100dvh;max-width:100%;background:var(--bg);animation:slideUp .25s ease;display:flex;flex-direction:column;position:relative;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.modal{width:100%;max-width:100%;background:var(--bg);animation:slideUp .25s ease;display:flex;flex-direction:column;position:relative;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{display:none}
 .modal-close{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,rgba(0,0,0,.5),rgba(0,0,0,.35));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.95);font-size:1.1rem;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s ease;box-shadow:0 2px 12px rgba(0,0,0,.3);flex-shrink:0;margin:0;padding:0}
@@ -242,7 +242,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .modal-desc{font-size:.82rem;line-height:1.6;color:var(--text2);white-space:pre-wrap;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .modal-meta{display:flex;flex-wrap:wrap;gap:6px;padding-top:12px;border-top:1px solid var(--border)}
 .meta-chip{font-size:.68rem;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text2);border:1px solid var(--border)}
-.modal-actions{display:flex;gap:10px;padding:10px 16px env(safe-area-inset-bottom,16px);background:var(--bg);border-top:1px solid var(--border);flex-shrink:0;position:sticky;bottom:0;z-index:10;margin-top:auto}
+.modal-actions{display:flex;gap:10px;padding:10px 16px env(safe-area-inset-bottom,16px);background:var(--bg);border-top:1px solid var(--border);flex-shrink:0}
 @media(min-width:520px){.modal{max-width:100%;min-height:100dvh;border-radius:0;touch-action:auto}.modal-handle{display:none}.modal-media{height:60vh}.modal-desc{-webkit-line-clamp:unset}}
 
 /* ===== BUTTONS ===== */
@@ -1052,7 +1052,14 @@ async function refreshAll() {
     myItems = [];
     isDataLoaded = false;
 
-    // Step 2: Clear local storage cache
+    // Step 2: 重置懒加载状态（防止上次加载干扰）
+    pendingFileList = [];
+    pendingLoadIndex = 0;
+    isLazyLoading = false;
+    lazyLoadComplete = false;
+    lazyLoadCancelFlag = true; // 取消正在进行的懒加载
+
+    // Step 3: Clear local storage cache
     try { localStorage.removeItem(CACHE_KEY); } catch(e) {}
 
     showToast('重新拉取远端数据...', 'info');
@@ -1437,6 +1444,13 @@ async function loadAllItems(options = {}) {
       if (lazyLoadComplete) {
         setCachedItems(activeItems);
       }
+    } else {
+      // API succeeded but no files found
+      isDataLoaded = true;
+      allItems = [];
+      renderEveryonePanel();
+      renderMinePanel();
+      console.log('✅ 没有发现任何道具文件');
     }
 
   } catch(e) {
@@ -1460,15 +1474,26 @@ async function loadNextBatch(batchSize = PAGE_SIZE) {
   }
 
   isLazyLoading = true;
+  lazyLoadCancelFlag = false; // 清除取消标志
   const batch = pendingFileList.slice(pendingLoadIndex, pendingLoadIndex + batchSize);
   const newItems = [];
 
   try {
     // 并行读取这批文件
     const results = await Promise.allSettled(batch.map(async ({ branch, filename }) => {
+      // 检查是否被取消（刷新等操作会设置取消标志）
+      if (lazyLoadCancelFlag) {
+        throw new Error('lazy load cancelled');
+      }
       const item = await ghReadFileDirect(branch, 'data/' + filename);
       return item && item.id ? { ...item, _owner: branch } : null;
     }));
+
+    // 再次检查取消标志（防止在等待期间被取消）
+    if (lazyLoadCancelFlag) {
+      console.log('⚠️ 懒加载被取消（刷新或其他操作）');
+      return [];
+    }
 
     results.forEach(r => {
       if (r.status === 'fulfilled' && r.value) {
@@ -1669,6 +1694,7 @@ let pendingFileList = [];     // [{branch, filename}] 待加载的文件列表
 let pendingLoadIndex = 0;     // 当前已加载到哪个位置
 let isLazyLoading = false;    // 是否正在加载中
 let lazyLoadComplete = false; // 是否已全部加载完
+let lazyLoadCancelFlag = false; // 懒加载取消标志（刷新时置位）
 let userPageReturnContext = null; // 记录用户页返回上下文
 let userPageCurrentUsername = ''; // 当前查看的用户页用户名
 
