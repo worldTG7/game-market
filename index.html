@@ -1923,13 +1923,21 @@ function deleteMyItem(itemId) {
   // 异步后台执行远端删除，不阻塞用户
   (async () => {
     try {
-      if (!(await validateSession())) return;
+      if (!(await validateSession())) {
+        // 验证失败，移除待删除标记
+        pendingDeletes.delete(itemId);
+        return;
+      }
       await saveItem(item);
       await loadAllItems();
       // 远端删除成功后，从待删除集合移除
       pendingDeletes.delete(itemId);
     } catch(e) {
-      showToast('删除同步失败: '+e.message,'error');
+      showToast('删除同步失败: '+e.message+'，请刷新后重试','error');
+      // 远端删除失败，从待删除集合移除，让道具重新出现
+      pendingDeletes.delete(itemId);
+      // 重新加载数据，让道具重新显示
+      await loadAllItems();
     }
   })();
 }
