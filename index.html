@@ -112,6 +112,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .server-filter-btn{padding:3px 8px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:.75rem;cursor:pointer;transition:all .2s}
 .server-filter-btn:hover{border-color:var(--accent);color:var(--accent)}
 .server-filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.server-filter-hint{font-size:.7rem;color:var(--muted);line-height:1;display:flex;align-items:center;padding:0 4px}
 
 .empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
 .empty-state svg{width:64px;height:64px;stroke:var(--border);fill:none;stroke-width:1.2;margin-bottom:16px}
@@ -212,7 +213,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .detail-header .user-count{font-size:.78rem;color:var(--text2);margin-top:2px}
 .detail-header .post-time{font-size:.75rem;color:var(--text2);margin-left:10px}
 .detail-header .actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
-.modal-media{width:100%;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;flex-shrink:1;z-index:1;min-height:0}
+.modal-media{width:100%;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;flex:0 0 38vh;max-height:38vh;z-index:1}
 .modal-media img,.modal-media video{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;user-select:none;-webkit-user-drag:none;transition:opacity .3s ease,transform .3s ease}
 .media-arrow{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:6px;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all .2s ease;opacity:.7}
 .media-arrow:hover{background:rgba(0,0,0,.6);opacity:1}
@@ -228,7 +229,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .media-dot:hover{background:rgba(255,255,255,.7)}
 .media-dot.active{background:#fff;transform:scale(1.3);box-shadow:0 0 8px rgba(255,255,255,.6)}
 .media-counter{position:absolute;top:12px;left:12px;font-size:.72rem;color:rgba(255,255,255,.8);background:rgba(0,0,0,.5);padding:3px 10px;border-radius:12px;z-index:5;font-variant-numeric:tabular-nums}
-.modal-info{padding:16px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
+.modal-info{padding:16px 16px 24px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
 .modal-title{font-size:1.25rem;font-weight:700;line-height:1.4;margin-bottom:8px}
 .modal-price{font-family:var(--font-display);font-size:1.2rem;font-weight:400;color:#8b92a8;margin-bottom:8px}
 .modal-price .price-num{color:#ffffff}
@@ -1031,6 +1032,9 @@ async function refreshAll() {
     myItems = [];
     isDataLoaded = false;
 
+    // 清除本地缓存
+    try { localStorage.removeItem(CACHE_KEY); } catch(e) {}
+
     // Reload data (loadAllItems will filter out pendingDeletes)
     await loadAllItems();
 
@@ -1306,12 +1310,14 @@ async function loadAllItems() {
       const localOnly = myItems.filter(it => !remoteIds.has(it.id)).map(it => ({...it, _owner: toBranchName(currentUser.username)}));
       allItems.push(...localOnly);
     }
+    // Filter out pending deletes
+    allItems = allItems.filter(it => !pendingDeletes.has(it.id));
     allItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
     isDataLoaded = true;
     renderEveryonePanel();
     renderMinePanel();
     showedCache = true;
-    console.log('✅ 显示缓存数据，', allItems.length, '个道具');
+    console.log('✅ 显示缓存数据，', allItems.length, '个道具（已过滤', pendingDeletes.size, '个待删除项）');
   } else {
     // No cache — don't show loading skeleton, wait for API response
     // This prevents flash when API returns quickly
@@ -1650,10 +1656,15 @@ function getCurrentServerFilters() {
 function serverFilterHTML(id) {
   const filters = getCurrentServerFilters();
   let h = `<div class="server-filter" id="${id}">`;
-  h += `<button class="server-filter-btn active" data-server="" onclick="setServerFilter('${id}', '')">全部</button>`;
-  filters.forEach(s => {
-    h += `<button class="server-filter-btn" data-server="${s}" onclick="setServerFilter('${id}', '${s}')">${s}</button>`;
-  });
+  if (currentCategory === '全部') {
+    h += `<button class="server-filter-btn active" data-server="">全部</button>`;
+    h += `<span class="server-filter-hint">点击导航栏《世界online》切换游戏版本</span>`;
+  } else {
+    h += `<button class="server-filter-btn active" data-server="" onclick="setServerFilter('${id}', '')">全部</button>`;
+    filters.forEach(s => {
+      h += `<button class="server-filter-btn" data-server="${s}" onclick="setServerFilter('${id}', '${s}')">${s}</button>`;
+    });
+  }
   h += '</div>';
   return h;
 }
@@ -2571,11 +2582,19 @@ function renderFormServerSelector() {
     if (hintEl) hintEl.textContent = currentCategory;
   }
 
-  h += `<div class="server-option">
-    <input type="radio" name="server" id="serverCustom" value="custom">
-    <label for="serverCustom">其它</label>
-  </div>
-  <input class="server-custom-input" id="serverCustomInput" type="text" placeholder="服务器名称" maxlength="50">`;
+  if (currentCategory === '全部') {
+    h += `<div class="server-option">
+      <input type="radio" name="server" id="serverCustom" value="custom">
+      <label for="serverCustom">其它</label>
+    </div>
+    <input class="server-custom-input" id="serverCustomInput" type="text" placeholder="其它服务器请先选择游戏版本" maxlength="50" disabled>`;
+  } else {
+    h += `<div class="server-option">
+      <input type="radio" name="server" id="serverCustom" value="custom">
+      <label for="serverCustom">其它</label>
+    </div>
+    <input class="server-custom-input" id="serverCustomInput" type="text" placeholder="服务器名称" maxlength="50">`;
+  }
 
   container.innerHTML = h;
 
@@ -2585,7 +2604,7 @@ function renderFormServerSelector() {
     radio.addEventListener('change', function() {
       if (this.value === 'custom') {
         customInput.classList.add('show');
-        customInput.focus();
+        if (!customInput.disabled) customInput.focus();
       } else {
         customInput.classList.remove('show');
       }
