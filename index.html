@@ -1352,91 +1352,92 @@ async function loadAllItems(options = {}) {
     const mainBranch = 'main';
     let remoteItems = [];
 
+    // 重置懒加载状态
+    pendingFileList = [];
+    pendingLoadIndex = 0;
+    isLazyLoading = false;
+    lazyLoadComplete = false;
+
     // Try GitHub API directly (always fresh, bypasses CDN cache)
-    console.log('📡 从 GitHub API 加载最新数据...');
+    console.log('📡 从 GitHub API 获取文件列表...');
     let apiSuccess = false;
     try {
       const branches = await ghGet(`/repos/${GH.owner}/${GH.repo}/branches`);
       const userBranches = branches.filter(b => b.name !== mainBranch && b.name !== 'gh-pages');
 
-      const results = await Promise.allSettled(userBranches.map(async b => {
+      // Phase 1: 只获取文件列表（不读取内容）
+      const fileResults = await Promise.allSettled(userBranches.map(async b => {
         const files = await ghListDir(b.name, 'data');
-        const items = await Promise.allSettled(files.map(f => ghReadFileDirect(b.name, 'data/'+f.name)));
-        return items.filter(r=>r.status==='fulfilled'&&r.value&&r.value.id)
-          .map(r => ({ ...r.value, _owner: b.name }));
+        return files.map(f => ({ branch: b.name, filename: f.name }));
       }));
 
-      results.forEach(r => { if (r.status==='fulfilled'&&r.value) remoteItems.push(...r.value); });
+      fileResults.forEach(r => {
+        if (r.status === 'fulfilled' && r.value) {
+          pendingFileList.push(...r.value);
+        }
+      });
+
       apiSuccess = true;
-      console.log('✅ API 加载成功，', remoteItems.length, '个道具');
+      console.log('✅ 获取到', pendingFileList.length, '个文件（待懒加载）');
     } catch (e) {
       console.log('⚠️ API 加载失败，尝试 CDN...');
     }
 
-    // Only fall back to CDN if API call failed (not if API succeeded with 0 items)
-    if (!apiSuccess && remoteItems.length === 0) {
+    // Fallback to CDN index if API failed
+    if (!apiSuccess && pendingFileList.length === 0) {
       const indexData = await cdnReadJson(mainBranch, 'index.json');
       if (indexData && indexData.items && Array.isArray(indexData.items)) {
+        // CDN already has full data, use it directly
         remoteItems = indexData.items.map(it => ({ ...it, _owner: it._owner || 'unknown' }));
         console.log('✅ CDN索引加载成功，', remoteItems.length, '个道具');
+
+        // Merge with local myItems
+        if (currentUser && myItems.length) {
+          const remoteIds = new Set(remoteItems.map(it => it.id));
+          const localOnly = myItems.filter(it => !remoteIds.has(it.id)).map(it => ({...it, _owner: toBranchName(currentUser.username)}));
+          remoteItems.push(...localOnly);
+        }
+
+        remoteItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
+        const activeItems = remoteItems.filter(it => !it._deleted && !pendingDeletes.has(it.id));
+        allItems = activeItems;
+        isDataLoaded = true;
+        lazyLoadComplete = true;
+        renderEveryonePanel();
+        renderMinePanel();
+        setCachedItems(activeItems);
+        return;
       }
     }
 
-    // Merge with local myItems
-    if (currentUser && myItems.length) {
-      const remoteIds = new Set(remoteItems.map(it => it.id));
-      const localOnly = myItems.filter(it => !remoteIds.has(it.id)).map(it => ({...it, _owner: toBranchName(currentUser.username)}));
-      remoteItems.push(...localOnly);
-    }
+    // Phase 2: 立即加载第一批（前20个文件）
+    if (pendingFileList.length > 0) {
+      const firstBatch = await loadNextBatch(PAGE_SIZE);
 
-    // 从缓存中读取本地点赞数，保护本地点赞过的道具不被远端覆盖
-    if (!skipCache) {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        try {
-          const cacheData = JSON.parse(cached);
-          const cacheMap = new Map(cacheData.items.map(it => [it.id, it.likes || 0]));
-          remoteItems.forEach(it => {
-            // 如果本次会话中本地点赞过此道具，优先使用本地点赞数
-            if (locallyLikedItems.has(it.id)) {
-              const currentLocalItem = allItems.find(local => local.id === it.id);
-              if (currentLocalItem) {
-                it.likes = currentLocalItem.likes || 0;
-              }
-            } else {
-              // 否则使用缓存和远端中的较大值
-              const localLikes = cacheMap.get(it.id);
-              if (localLikes !== undefined && localLikes > (it.likes || 0)) {
-                it.likes = localLikes;
-              }
-            }
-          });
-        } catch(e) { /* ignore */ }
+      // Merge with local myItems
+      if (currentUser && myItems.length) {
+        const remoteIds = new Set(firstBatch.map(it => it.id));
+        const localOnly = myItems.filter(it => !remoteIds.has(it.id)).map(it => ({...it, _owner: toBranchName(currentUser.username)}));
+        firstBatch.push(...localOnly);
       }
-    }
 
-    remoteItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
+      firstBatch.sort((a,b) => (b.time||'').localeCompare(a.time||''));
+      const activeItems = firstBatch.filter(it => !it._deleted && !pendingDeletes.has(it.id));
 
-    // Filter out deleted items before caching and display
-    // Also filter out pendingDeletes (locally deleted items not yet synced to remote)
-    const activeItems = remoteItems.filter(it => !it._deleted && !pendingDeletes.has(it.id));
-
-    // Mark data as loaded BEFORE render check, so render functions won't show loading
-    isDataLoaded = true;
-
-    // Only update if data changed OR we showed loading skeleton (need to replace it)
-    const newHash = JSON.stringify(activeItems.map(it => it.id + ':' + it.time + ':' + (it.likes||0)));
-    const oldHash = JSON.stringify(allItems.map(it => it.id + ':' + it.time + ':' + (it.likes||0)));
-
-    if (newHash !== oldHash || !showedCache) {
-      allItems = activeItems;
+      // Replace allItems with first batch (keep cache data if it was better)
+      if (!showedCache || activeItems.length > 0) {
+        allItems = activeItems;
+      }
+      isDataLoaded = true;
       renderEveryonePanel();
       renderMinePanel();
-      console.log('✅ 数据已更新，', allItems.length, '个道具（已过滤删除项）');
-    }
+      console.log('✅ 首批加载', activeItems.length, '个道具，剩余', pendingFileList.length - pendingLoadIndex, '个待加载');
 
-    // Update cache (only non-deleted items)
-    setCachedItems(activeItems);
+      // Update cache with first batch
+      if (lazyLoadComplete) {
+        setCachedItems(activeItems);
+      }
+    }
 
   } catch(e) {
     console.error('Background refresh failed:', e);
@@ -1448,6 +1449,73 @@ async function loadAllItems(options = {}) {
       renderMinePanel();
     }
   }
+}
+
+// ===== 懒加载：加载下一批道具 =====
+async function loadNextBatch(batchSize = PAGE_SIZE) {
+  if (isLazyLoading || lazyLoadComplete) return [];
+  if (pendingLoadIndex >= pendingFileList.length) {
+    lazyLoadComplete = true;
+    return [];
+  }
+
+  isLazyLoading = true;
+  const batch = pendingFileList.slice(pendingLoadIndex, pendingLoadIndex + batchSize);
+  const newItems = [];
+
+  try {
+    // 并行读取这批文件
+    const results = await Promise.allSettled(batch.map(async ({ branch, filename }) => {
+      const item = await ghReadFileDirect(branch, 'data/' + filename);
+      return item && item.id ? { ...item, _owner: branch } : null;
+    }));
+
+    results.forEach(r => {
+      if (r.status === 'fulfilled' && r.value) {
+        newItems.push(r.value);
+      }
+    });
+
+    pendingLoadIndex += batchSize;
+
+    // 从缓存中读取本地点赞数
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const cacheData = JSON.parse(cached);
+        const cacheMap = new Map(cacheData.items.map(it => [it.id, it.likes || 0]));
+        newItems.forEach(it => {
+          if (locallyLikedItems.has(it.id)) {
+            const currentLocalItem = allItems.find(local => local.id === it.id);
+            if (currentLocalItem) {
+              it.likes = currentLocalItem.likes || 0;
+            }
+          } else {
+            const localLikes = cacheMap.get(it.id);
+            if (localLikes !== undefined && localLikes > (it.likes || 0)) {
+              it.likes = localLikes;
+            }
+          }
+        });
+      } catch(e) { /* ignore */ }
+    }
+
+    if (pendingLoadIndex >= pendingFileList.length) {
+      lazyLoadComplete = true;
+      console.log('✅ 懒加载完成，所有', pendingFileList.length, '个文件已加载');
+
+      // Update cache with complete dataset
+      const completeItems = allItems.filter(it => !it._deleted && !pendingDeletes.has(it.id));
+      setCachedItems(completeItems);
+      console.log('💾 已缓存完整数据，', completeItems.length, '个道具');
+    }
+  } catch(e) {
+    console.error('懒加载批次失败:', e);
+  } finally {
+    isLazyLoading = false;
+  }
+
+  return newItems;
 }
 
 // ================================================================
@@ -1593,8 +1661,14 @@ function lazyLoadImages() {
 // EVERYONE PANEL (with pagination & infinite scroll)
 // ================================================================
 let everyonePage = 0;
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 let isViewingUserPage = false;
+
+// ===== 懒加载状态 =====
+let pendingFileList = [];     // [{branch, filename}] 待加载的文件列表
+let pendingLoadIndex = 0;     // 当前已加载到哪个位置
+let isLazyLoading = false;    // 是否正在加载中
+let lazyLoadComplete = false; // 是否已全部加载完
 let userPageReturnContext = null; // 记录用户页返回上下文
 let userPageCurrentUsername = ''; // 当前查看的用户页用户名
 
@@ -1883,8 +1957,8 @@ function renderEveryonePanel() {
   h += renderCardGrid(pageItems, 'everyoneGrid');
   h += '</div>';
 
-  // Add load more button if there are more items
-  if (display.length > PAGE_SIZE) {
+  // Add load more button if there are more items OR lazy loading is not complete
+  if (display.length > PAGE_SIZE || !lazyLoadComplete) {
     h += `<div id="loadMoreTrigger" style="text-align:center;padding:20px;color:var(--muted);font-size:.85rem">
       <div style="display:inline-block;animation:spin 1s linear infinite">⟳</div> 加载更多...
     </div>`;
@@ -1896,16 +1970,40 @@ function renderEveryonePanel() {
   bindSearchEveryone();
 
   // Setup infinite scroll
-  if (display.length > PAGE_SIZE) {
+  if (display.length > PAGE_SIZE || !lazyLoadComplete) {
     setupInfiniteScroll();
   }
 }
 
-function loadMoreItems() {
+async function loadMoreItems() {
   everyonePage++;
-  const display = filterBySearchAndServer(allItems.filter(it => !it._deleted), everyoneSearchTerm, everyoneServerFilter);
+  let display = filterBySearchAndServer(allItems.filter(it => !it._deleted), everyoneSearchTerm, everyoneServerFilter);
   const start = everyonePage * PAGE_SIZE;
   const end = start + PAGE_SIZE;
+
+  // If we need more items than currently loaded, trigger lazy loading
+  if (end > display.length && !lazyLoadComplete && pendingFileList.length > 0) {
+    const trigger = document.getElementById('loadMoreTrigger');
+    if (trigger) {
+      trigger.innerHTML = '<div style="display:inline-block;animation:spin 1s linear infinite">⟳</div> 加载中...';
+    }
+
+    const newBatch = await loadNextBatch(PAGE_SIZE);
+    if (newBatch.length > 0) {
+      // Merge new items into allItems
+      const existingIds = new Set(allItems.map(it => it.id));
+      newBatch.forEach(it => {
+        if (!existingIds.has(it.id)) {
+          allItems.push(it);
+        }
+      });
+      // Re-sort
+      allItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
+      // Recalculate display with new items
+      display = filterBySearchAndServer(allItems.filter(it => !it._deleted), everyoneSearchTerm, everyoneServerFilter);
+    }
+  }
+
   const pageItems = display.slice(start, end);
 
   if (pageItems.length === 0) {
@@ -1944,14 +2042,14 @@ function loadMoreItems() {
   // Update trigger text
   const trigger = document.getElementById('loadMoreTrigger');
   if (trigger) {
-    if (end >= display.length) {
+    if (end >= display.length && lazyLoadComplete) {
       trigger.innerHTML = '<div style="color:var(--muted);font-size:.85rem">已加载全部道具</div>';
     } else {
       trigger.innerHTML = `<div style="display:inline-block;animation:spin 1s linear infinite">⟳</div> 加载更多... (${Math.min(end, display.length)}/${display.length})`;
     }
   }
 
-  return end < display.length;
+  return end < display.length || !lazyLoadComplete;
 }
 
 function setupInfiniteScroll() {
@@ -2460,7 +2558,7 @@ function renderModalMedia() {
   const mediaEl = el.querySelector('img, video');
   if (!mediaEl) return;
 
-  let touchStartX=0, touchStartY=0, touchStartTime=0, isSwiping=false, currentDeltaX=0;
+  let touchStartX=0, touchStartY=0, touchStartTime=0, isSwiping=false;
   const containerWidth = el.offsetWidth;
 
   el.ontouchstart=(e)=>{
@@ -2468,9 +2566,7 @@ function renderModalMedia() {
     touchStartY=e.touches[0].clientY;
     touchStartTime=Date.now();
     isSwiping=true;
-    currentDeltaX=0;
     mediaEl.style.transition='none';
-    mediaEl.classList.add('swiping');
   };
 
   el.ontouchmove=(e)=>{
@@ -2481,7 +2577,6 @@ function renderModalMedia() {
     // 判断滑动方向
     if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>5){
       e.preventDefault();
-      currentDeltaX=dx;
 
       // 应用阻尼效果：边缘滑动时阻力增加
       let translateX = dx;
@@ -2490,7 +2585,6 @@ function renderModalMedia() {
       }
 
       mediaEl.style.transform=`translateX(${translateX}px)`;
-      mediaEl.style.opacity=Math.max(0.3, 1 - Math.abs(dx) / containerWidth * 0.7);
     }
   };
 
@@ -2503,32 +2597,38 @@ function renderModalMedia() {
     const dt=Date.now()-touchStartTime;
     const velocity=Math.abs(dx)/dt; // px/ms
 
-    mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
-
     // 判断是否切换图片：距离 > 50% 容器宽度 或 速度 > 0.8px/ms
-    const shouldSwipe = (Math.abs(dx) > containerWidth * 0.5 || velocity > 0.8) && Math.abs(dx) > Math.abs(dy);
+    const shouldSwipe = (Math.abs(dx) > containerWidth * 0.5 || velocity > 0.8) && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50;
 
-    if(shouldSwipe && Math.abs(dx) > 50){
-      // 执行切换动画
-      const targetX = dx > 0 ? containerWidth : -containerWidth;
-      mediaEl.style.transform=`translateX(${targetX}px)`;
-      mediaEl.style.opacity='0';
+    if(shouldSwipe){
+      // 执行滑动切换动画（平滑过渡，不闪黑屏）
+      const targetIndex = dx > 0 ? currentMediaIndex - 1 : currentMediaIndex + 1;
 
-      setTimeout(() => {
-        mediaEl.classList.remove('swiping');
-        if(dx>0) navMedia(-1);
-        else navMedia(1);
-      }, 300);
+      if (targetIndex >= 0 && targetIndex < currentItem.media.length) {
+        // 可以切换 - 执行平滑滑动动画
+        mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        const targetX = dx > 0 ? containerWidth : -containerWidth;
+        mediaEl.style.transform=`translateX(${targetX}px)`;
+
+        setTimeout(() => {
+          // 更新到目标图片
+          currentMediaIndex = targetIndex;
+          renderModalMedia();
+        }, 300);
+      } else {
+        // 已到边界 - 回弹动画
+        mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        mediaEl.style.transform='translateX(0)';
+      }
     } else {
-      // 回弹动画
+      // 未达到切换阈值 - 回弹动画
+      mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       mediaEl.style.transform='translateX(0)';
-      mediaEl.style.opacity='1';
-      setTimeout(() => mediaEl.classList.remove('swiping'), 300);
     }
   };
 
   // 鼠标拖动支持（桌面端）- 平滑拖拽动画
-  let mouseStartX=0, mouseStartTime=0, isMouseDragging=false, mouseDeltaX=0;
+  let mouseStartX=0, mouseStartTime=0, isMouseDragging=false;
   el.style.cursor='grab';
 
   el.onmousedown=(e)=>{
@@ -2536,10 +2636,8 @@ function renderModalMedia() {
     mouseStartX=e.clientX;
     mouseStartTime=Date.now();
     isMouseDragging=true;
-    mouseDeltaX=0;
     el.style.cursor='grabbing';
     mediaEl.style.transition='none';
-    mediaEl.classList.add('swiping');
     e.preventDefault();
   };
 
@@ -2547,7 +2645,6 @@ function renderModalMedia() {
     if(!isMouseDragging)return;
     e.preventDefault();
     const dx=e.clientX-mouseStartX;
-    mouseDeltaX=dx;
 
     // 应用阻尼效果
     let translateX = dx;
@@ -2556,7 +2653,6 @@ function renderModalMedia() {
     }
 
     mediaEl.style.transform=`translateX(${translateX}px)`;
-    mediaEl.style.opacity=Math.max(0.3, 1 - Math.abs(dx) / containerWidth * 0.7);
   };
 
   el.onmouseup=(e)=>{
@@ -2568,24 +2664,33 @@ function renderModalMedia() {
     const dt=Date.now()-mouseStartTime;
     const velocity=Math.abs(dx)/dt;
 
-    mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
-
+    // 判断是否切换图片：距离 > 50% 容器宽度 或 速度 > 0.8px/ms
     const shouldSwipe = (Math.abs(dx) > containerWidth * 0.5 || velocity > 0.8) && Math.abs(dx) > 50;
 
     if(shouldSwipe){
-      const targetX = dx > 0 ? containerWidth : -containerWidth;
-      mediaEl.style.transform=`translateX(${targetX}px)`;
-      mediaEl.style.opacity='0';
+      // 执行滑动切换动画（平滑过渡，不闪黑屏）
+      const targetIndex = dx > 0 ? currentMediaIndex - 1 : currentMediaIndex + 1;
 
-      setTimeout(() => {
-        mediaEl.classList.remove('swiping');
-        if(dx>0) navMedia(-1);
-        else navMedia(1);
-      }, 300);
+      if (targetIndex >= 0 && targetIndex < currentItem.media.length) {
+        // 可以切换 - 执行平滑滑动动画
+        mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        const targetX = dx > 0 ? containerWidth : -containerWidth;
+        mediaEl.style.transform=`translateX(${targetX}px)`;
+
+        setTimeout(() => {
+          // 更新到目标图片
+          currentMediaIndex = targetIndex;
+          renderModalMedia();
+        }, 300);
+      } else {
+        // 已到边界 - 回弹动画
+        mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        mediaEl.style.transform='translateX(0)';
+      }
     } else {
+      // 未达到切换阈值 - 回弹动画
+      mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       mediaEl.style.transform='translateX(0)';
-      mediaEl.style.opacity='1';
-      setTimeout(() => mediaEl.classList.remove('swiping'), 300);
     }
   };
 
@@ -2593,10 +2698,8 @@ function renderModalMedia() {
     if(isMouseDragging){
       isMouseDragging=false;
       el.style.cursor='grab';
-      mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+      mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       mediaEl.style.transform='translateX(0)';
-      mediaEl.style.opacity='1';
-      setTimeout(() => mediaEl.classList.remove('swiping'), 300);
     }
   };
 
@@ -2714,7 +2817,6 @@ function renderFullscreenMedia() {
           translateX = dx * 0.3;
         }
         imgEl.style.transform = `translateX(${translateX}px)`;
-        imgEl.style.opacity = Math.max(0.3, 1 - Math.abs(dx) / containerWidth * 0.7);
       }
     };
 
@@ -2727,27 +2829,33 @@ function renderFullscreenMedia() {
       const dt = Date.now() - touchStartTime;
       const velocity = Math.abs(dx) / dt;
 
-      imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+      // 判断是否切换图片：距离 > 50% 容器宽度 或 速度 > 0.8px/ms
+      const shouldSwipe = (Math.abs(dx) > containerWidth * 0.5 || velocity > 0.8) && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50;
 
-      const shouldSwipe = (Math.abs(dx) > containerWidth * 0.3 || velocity > 0.5) && Math.abs(dx) > Math.abs(dy);
+      if (shouldSwipe) {
+        // 执行滑动切换动画（平滑过渡，不闪黑屏）
+        const targetIndex = dx > 0 ? fullscreenIndex - 1 : fullscreenIndex + 1;
 
-      if (shouldSwipe && Math.abs(dx) > 30) {
-        const targetX = dx > 0 ? containerWidth : -containerWidth;
-        imgEl.style.transform = `translateX(${targetX}px)`;
-        imgEl.style.opacity = '0';
+        if (targetIndex >= 0 && targetIndex < m.length) {
+          // 可以切换 - 执行平滑滑动动画
+          imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+          const targetX = dx > 0 ? containerWidth : -containerWidth;
+          imgEl.style.transform = `translateX(${targetX}px)`;
 
-        setTimeout(() => {
-          if (dx > 0 && fullscreenIndex > 0) {
-            fullscreenIndex--;
+          setTimeout(() => {
+            // 更新到目标图片
+            fullscreenIndex = targetIndex;
             renderFullscreenMedia();
-          } else if (dx < 0 && fullscreenIndex < m.length - 1) {
-            fullscreenIndex++;
-            renderFullscreenMedia();
-          }
-        }, 300);
+          }, 300);
+        } else {
+          // 已到边界 - 回弹动画
+          imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+          imgEl.style.transform = 'translateX(0)';
+        }
       } else {
+        // 未达到切换阈值 - 回弹动画
+        imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
         imgEl.style.transform = 'translateX(0)';
-        imgEl.style.opacity = '1';
       }
     };
 
@@ -2773,7 +2881,6 @@ function renderFullscreenMedia() {
         translateX = dx * 0.3;
       }
       imgEl.style.transform = `translateX(${translateX}px)`;
-      imgEl.style.opacity = Math.max(0.3, 1 - Math.abs(dx) / containerWidth * 0.7);
     };
 
     mediaEl.onmouseup = (e) => {
@@ -2782,25 +2889,36 @@ function renderFullscreenMedia() {
       mediaEl.style.cursor = 'grab';
 
       const dx = e.clientX - mouseStartX;
-      imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+      const dt = Date.now() - mouseStartTime;
+      const velocity = Math.abs(dx) / dt;
 
-      if (Math.abs(dx) > containerWidth * 0.3 && Math.abs(dx) > 30) {
-        const targetX = dx > 0 ? containerWidth : -containerWidth;
-        imgEl.style.transform = `translateX(${targetX}px)`;
-        imgEl.style.opacity = '0';
+      // 判断是否切换图片：距离 > 50% 容器宽度 或 速度 > 0.8px/ms
+      const shouldSwipe = (Math.abs(dx) > containerWidth * 0.5 || velocity > 0.8) && Math.abs(dx) > 50;
 
-        setTimeout(() => {
-          if (dx > 0 && fullscreenIndex > 0) {
-            fullscreenIndex--;
+      if (shouldSwipe) {
+        // 执行滑动切换动画（平滑过渡，不闪黑屏）
+        const targetIndex = dx > 0 ? fullscreenIndex - 1 : fullscreenIndex + 1;
+
+        if (targetIndex >= 0 && targetIndex < m.length) {
+          // 可以切换 - 执行平滑滑动动画
+          imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+          const targetX = dx > 0 ? containerWidth : -containerWidth;
+          imgEl.style.transform = `translateX(${targetX}px)`;
+
+          setTimeout(() => {
+            // 更新到目标图片
+            fullscreenIndex = targetIndex;
             renderFullscreenMedia();
-          } else if (dx < 0 && fullscreenIndex < m.length - 1) {
-            fullscreenIndex++;
-            renderFullscreenMedia();
-          }
-        }, 300);
+          }, 300);
+        } else {
+          // 已到边界 - 回弹动画
+          imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+          imgEl.style.transform = 'translateX(0)';
+        }
       } else {
+        // 未达到切换阈值 - 回弹动画
+        imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
         imgEl.style.transform = 'translateX(0)';
-        imgEl.style.opacity = '1';
       }
     };
 
@@ -2808,9 +2926,8 @@ function renderFullscreenMedia() {
       if (isMouseDragging) {
         isMouseDragging = false;
         mediaEl.style.cursor = 'grab';
-        imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+        imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
         imgEl.style.transform = 'translateX(0)';
-        imgEl.style.opacity = '1';
       }
     };
   }
@@ -3053,7 +3170,8 @@ function removeMedia(i){uploadedMedia.splice(i,1);renderUploadPreviews();}
 // ================================================================
 async function publishItem() {
   if(!currentUser){showToast('请先登录','error');return;}
-  if(!(await validateSession())) return;
+
+  // 先进行表单验证（同步，无延迟）
   const title=document.getElementById('fTitle').value.trim();
   const price=parseFloat(document.getElementById('fPrice').value);
   const server=getSelectedServer();
@@ -3061,13 +3179,21 @@ async function publishItem() {
   if(isNaN(price)||price<0){showToast('请填写有效价格','error');return;}
   if(!server){showToast('请选择或填写服务器','error');return;}
 
-  // 立即显示遮罩层
+  // 立即显示遮罩层（无延迟）
   window._publishing = true;
   const overlay = document.getElementById('publishOverlay');
   overlay.classList.add('show');
 
   // 使用 setTimeout 确保浏览器先渲染遮罩层，再执行发布流程
-  setTimeout(() => doPublish(title, price, server), 0);
+  setTimeout(async () => {
+    // 在遮罩层显示后验证会话（异步，可能有延迟但不影响用户体验）
+    if(!(await validateSession())) {
+      overlay.classList.remove('show');
+      window._publishing = false;
+      return;
+    }
+    doPublish(title, price, server);
+  }, 0);
 }
 
 async function doPublish(title, price, server) {
