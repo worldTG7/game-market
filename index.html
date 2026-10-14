@@ -1908,27 +1908,33 @@ function renderMinePanel() {
   bindSearchMine();
 }
 
-async function deleteMyItem(itemId) {
+function deleteMyItem(itemId) {
   if (!currentUser) { showToast('请先登录','error'); return; }
-  if (!(await validateSession())) return;
 
   const item = myItems.find(it => it.id === itemId) || allItems.find(it => it.id === itemId);
   if (!item) { showToast('道具不存在','error'); return; }
 
-  // 显示确认对话框
+  // 立即弹出确认（不等待网络请求）
   if (!confirm('确定要删除此道具吗？')) return;
 
+  // 立即标记删除 + 更新UI
   item._deleted = true;
   showToast('✅ 删除成功，预计1-3分钟后完全生效','success');
+  renderMinePanel();
 
-  try {
-    await saveItem(item);
-    renderMinePanel();
-    await loadAllItems();
-  } catch(e) {
-    showToast('删除失败: '+e.message,'error');
-    item._deleted = false;
-  }
+  // 清除本地缓存
+  try { localStorage.removeItem(CACHE_KEY); } catch(e) {}
+
+  // 异步后台执行远端删除，不阻塞用户
+  (async () => {
+    try {
+      if (!(await validateSession())) return;
+      await saveItem(item);
+      await loadAllItems();
+    } catch(e) {
+      showToast('删除同步失败: '+e.message,'error');
+    }
+  })();
 }
 
 // ================================================================
