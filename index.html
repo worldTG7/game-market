@@ -482,7 +482,13 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
 <!-- ===== PUBLISH OVERLAY ===== -->
 <div class="publish-overlay" id="publishOverlay">
-  <div class="publish-message">⏳ 发布中，请稍候...</div>
+  <div class="publish-message">
+    <div>⏳ 发布中，请稍候...</div>
+    <div class="upload-progress show" id="overlayProgress" style="margin-top:12px">
+      <div class="upload-progress-text" id="overlayProgressText">准备上传...</div>
+      <div class="upload-progress-bar"><div class="upload-progress-fill" id="overlayProgressFill"></div></div>
+    </div>
+  </div>
 </div>
 
 <!-- ===== LOGIN OVERLAY ===== -->
@@ -2531,10 +2537,10 @@ async function publishItem() {
   const itemId = 'item_'+Date.now();
   const branch = toBranchName(currentUser.username);
 
-  // Show progress bar
-  const progressEl = document.getElementById('uploadProgress');
-  const progressText = document.getElementById('uploadProgressText');
-  const progressFill = document.getElementById('uploadProgressFill');
+  // Show progress bar in overlay
+  const progressEl = document.getElementById('overlayProgress');
+  const progressText = document.getElementById('overlayProgressText');
+  const progressFill = document.getElementById('overlayProgressFill');
   progressEl.classList.add('show');
 
   // Upload media files separately
