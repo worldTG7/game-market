@@ -197,7 +197,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .publish-message{background:var(--surface);color:var(--text);padding:24px 32px;border-radius:12px;font-size:1.1rem;box-shadow:0 4px 20px rgba(0,0,0,.3)}
 .modal-overlay{position:fixed;inset:0;z-index:210;background:rgba(0,0,0,.85);display:none;overflow:hidden}
 .modal-overlay.show{display:block}
-.modal{width:100%;height:100dvh;max-width:100%;background:var(--bg);animation:slideUp .25s ease;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.modal{width:100%;height:100dvh;max-width:100%;background:var(--bg);animation:slideUp .25s ease;display:flex;flex-direction:column;position:relative;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .modal-handle{display:none}
 .modal-close{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,rgba(0,0,0,.5),rgba(0,0,0,.35));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.95);font-size:1.1rem;font-weight:300;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s ease;box-shadow:0 2px 12px rgba(0,0,0,.3);flex-shrink:0;margin:0;padding:0}
@@ -213,8 +213,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .detail-header .user-count{font-size:.78rem;color:var(--text2);margin-top:2px}
 .detail-header .post-time{font-size:.75rem;color:var(--text2);margin-left:10px}
 .detail-header .actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
-.modal-media{width:100%;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;flex:0 0 38vh;max-height:38vh;z-index:1}
-.modal-media img,.modal-media video{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;user-select:none;-webkit-user-drag:none;transition:opacity .3s ease,transform .3s ease}
+.modal-media{width:100%;background:#000;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;flex:0 0 auto;max-height:40vh;z-index:1}
+.modal-media img,.modal-media video{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;user-select:none;-webkit-user-drag:none;transition:opacity .25s ease,transform .3s cubic-bezier(.4,0,.2,1)}
+.modal-media img.sliding,.modal-media video.sliding{transition:transform .25s cubic-bezier(.4,0,.2,1),opacity .15s ease}
 .media-arrow{position:absolute;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:6px;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;transition:all .2s ease;opacity:.7}
 .media-arrow:hover{background:rgba(0,0,0,.6);opacity:1}
 .media-arrow:active{transform:translateY(-50%) scale(.9)}
@@ -229,7 +230,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .media-dot:hover{background:rgba(255,255,255,.7)}
 .media-dot.active{background:#fff;transform:scale(1.3);box-shadow:0 0 8px rgba(255,255,255,.6)}
 .media-counter{position:absolute;top:12px;left:12px;font-size:.72rem;color:rgba(255,255,255,.8);background:rgba(0,0,0,.5);padding:3px 10px;border-radius:12px;z-index:5;font-variant-numeric:tabular-nums}
-.modal-info{padding:16px 16px 24px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0}
+.modal-info{padding:16px;flex:0 0 auto}
 .modal-title{font-size:1.25rem;font-weight:700;line-height:1.4;margin-bottom:8px}
 .modal-price{font-family:var(--font-display);font-size:1.2rem;font-weight:400;color:#8b92a8;margin-bottom:8px}
 .modal-price .price-num{color:#ffffff}
@@ -241,7 +242,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .modal-desc{font-size:.82rem;line-height:1.6;color:var(--text2);white-space:pre-wrap;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .modal-meta{display:flex;flex-wrap:wrap;gap:6px;padding-top:12px;border-top:1px solid var(--border)}
 .meta-chip{font-size:.68rem;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text2);border:1px solid var(--border)}
-.modal-actions{display:flex;gap:10px;padding:10px 16px env(safe-area-inset-bottom,16px);background:var(--bg);border-top:1px solid var(--border);flex-shrink:0}
+.modal-actions{display:flex;gap:10px;padding:10px 16px env(safe-area-inset-bottom,16px);background:var(--bg);border-top:1px solid var(--border);flex-shrink:0;position:sticky;bottom:0;z-index:10;margin-top:auto}
 @media(min-width:520px){.modal{max-width:100%;min-height:100dvh;border-radius:0;touch-action:auto}.modal-handle{display:none}.modal-media{height:60vh}.modal-desc{-webkit-line-clamp:unset}}
 
 /* ===== BUTTONS ===== */
@@ -318,6 +319,16 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:999;padding:12px 24px;border-radius:12px;background:var(--surface2);color:var(--text);font-size:.85rem;font-weight:500;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.4);transition:transform .3s ease;white-space:nowrap}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.success{border-color:var(--success)}.toast.error{border-color:var(--danger)}.toast.warning{border-color:#f39c12;background:#f39c12}
+
+/* ===== FULLSCREEN IMAGE VIEWER ===== */
+.fullscreen-overlay{position:fixed;inset:0;background:#000;z-index:10000;display:none;opacity:0;transition:opacity .3s ease}
+.fullscreen-overlay.show{display:flex;opacity:1;flex-direction:column;align-items:center;justify-content:center}
+.fullscreen-container{width:100%;height:100%;position:relative;display:flex;align-items:center;justify-content:center}
+.fullscreen-close{position:absolute;top:20px;right:20px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:1.5rem;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;transition:all .2s ease}
+.fullscreen-close:hover{background:rgba(0,0,0,.7);border-color:rgba(255,255,255,.4);transform:scale(1.1)}
+.fullscreen-media{max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.fullscreen-media img,.fullscreen-media video{max-width:100%;max-height:100vh;object-fit:contain;user-select:none;-webkit-user-drag:none;transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s ease}
+.fullscreen-counter{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);backdrop-filter:blur(8px);color:#fff;padding:8px 16px;border-radius:20px;font-size:.85rem;z-index:10}
 
 /* Loading skeleton shimmer */
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
@@ -432,10 +443,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
         <div class="server-selector" id="serverSelector"></div>
       </div>
       <div class="form-section">
-        <label class="form-label">图片 / 视频</label>
+        <label class="form-label">图片</label>
         <div class="upload-zone" id="uploadZone">
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <span>上传图片/视频</span>
+          <span>上传图片</span>
           <input type="file" id="fileInput" multiple accept="image/*">
         </div>
         <div class="upload-progress" id="uploadProgress">
@@ -528,6 +539,15 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <div class="user-page-overlay" id="userPageOverlay">
   <div class="user-page-header" id="userPageHeader"></div>
   <div class="user-page-content" id="userPageContent"></div>
+</div>
+
+<!-- FULLSCREEN IMAGE VIEWER -->
+<div class="fullscreen-overlay" id="fullscreenOverlay" onclick="closeFullscreen(event)">
+  <div class="fullscreen-container" onclick="event.stopPropagation()">
+    <button class="fullscreen-close" onclick="closeFullscreen()">✕</button>
+    <div class="fullscreen-media" id="fullscreenMedia"></div>
+    <div class="fullscreen-counter" id="fullscreenCounter"></div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1017,10 +1037,10 @@ function updateHeader() {
 async function refreshAll() {
   const btn = document.getElementById('refreshBtn');
   if (btn) btn.classList.add('spinning');
-  showToast('正在刷新...', 'info');
+  showToast('清理本地缓存...', 'info');
 
   try {
-    // Clear caches
+    // Step 1: Clear local state
     everyoneSearchTerm = '';
     everyoneServerFilter = '';
     mineSearchTerm = '';
@@ -1032,11 +1052,13 @@ async function refreshAll() {
     myItems = [];
     isDataLoaded = false;
 
-    // 清除本地缓存
+    // Step 2: Clear local storage cache
     try { localStorage.removeItem(CACHE_KEY); } catch(e) {}
 
-    // Reload data (loadAllItems will filter out pendingDeletes)
-    await loadAllItems();
+    showToast('重新拉取远端数据...', 'info');
+
+    // Step 3: Reload data from remote (skip cache)
+    await loadAllItems({ skipCache: true });
 
     showToast('刷新完成', 'success');
   } catch (e) {
@@ -1298,10 +1320,12 @@ function setCachedItems(items) {
   }
 }
 
-async function loadAllItems() {
+async function loadAllItems(options = {}) {
+  const skipCache = options.skipCache || false;
+
   // STEP 1: Show cached data immediately (instant)
-  const cachedItems = getCachedItems();
   let showedCache = false;
+  const cachedItems = skipCache ? null : getCachedItems();
   if (cachedItems && cachedItems.length > 0) {
     allItems = cachedItems;
     // Merge with local myItems
@@ -1366,27 +1390,29 @@ async function loadAllItems() {
     }
 
     // 从缓存中读取本地点赞数，保护本地点赞过的道具不被远端覆盖
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      try {
-        const cacheData = JSON.parse(cached);
-        const cacheMap = new Map(cacheData.items.map(it => [it.id, it.likes || 0]));
-        remoteItems.forEach(it => {
-          // 如果本次会话中本地点赞过此道具，优先使用本地点赞数
-          if (locallyLikedItems.has(it.id)) {
-            const currentLocalItem = allItems.find(local => local.id === it.id);
-            if (currentLocalItem) {
-              it.likes = currentLocalItem.likes || 0;
+    if (!skipCache) {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          const cacheData = JSON.parse(cached);
+          const cacheMap = new Map(cacheData.items.map(it => [it.id, it.likes || 0]));
+          remoteItems.forEach(it => {
+            // 如果本次会话中本地点赞过此道具，优先使用本地点赞数
+            if (locallyLikedItems.has(it.id)) {
+              const currentLocalItem = allItems.find(local => local.id === it.id);
+              if (currentLocalItem) {
+                it.likes = currentLocalItem.likes || 0;
+              }
+            } else {
+              // 否则使用缓存和远端中的较大值
+              const localLikes = cacheMap.get(it.id);
+              if (localLikes !== undefined && localLikes > (it.likes || 0)) {
+                it.likes = localLikes;
+              }
             }
-          } else {
-            // 否则使用缓存和远端中的较大值
-            const localLikes = cacheMap.get(it.id);
-            if (localLikes !== undefined && localLikes > (it.likes || 0)) {
-              it.likes = localLikes;
-            }
-          }
-        });
-      } catch(e) { /* ignore */ }
+          });
+        } catch(e) { /* ignore */ }
+      }
     }
 
     remoteItems.sort((a,b) => (b.time||'').localeCompare(a.time||''));
@@ -1622,6 +1648,19 @@ document.addEventListener('click', function(e) {
     sel.classList.remove('show');
   }
 });
+
+// 滚动时关闭类目选择器
+function closeCategoryOnScroll() {
+  const sel = document.getElementById('categorySelector');
+  if (sel && sel.classList.contains('show')) {
+    sel.classList.remove('show');
+  }
+}
+window.addEventListener('scroll', closeCategoryOnScroll, { passive: true });
+const mainContent = document.querySelector('.main-content');
+if (mainContent) {
+  mainContent.addEventListener('scroll', closeCategoryOnScroll, { passive: true });
+}
 
 const CATEGORY_SERVERS = {
   '全部': ['天启黎明','无尽星芒','圣者苍海','神圣花海','岁月永恒','时光无极','赤海神域','圣盾神剑','王者传说','浩气震古','炎火时光','金羊星辰','盖世战神','永耀刃渊','其它'],
@@ -2391,7 +2430,7 @@ function renderModalMedia() {
 
   let h='';
   if(d.type==='image'){
-    h = `<img src="${mediaSrc}" alt="" style="opacity:0" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem;padding:60px 0\\'>🎮</div>'" onload="this.style.opacity='1'">`;
+    h = `<img src="${mediaSrc}" alt="" style="opacity:0;cursor:zoom-in" onclick="openFullscreen(${currentMediaIndex})" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem;padding:60px 0\\'>🎮</div>'" onload="this.style.opacity='1'">`;
   } else {
     const posterSrc = d.thumbnail || mediaSrc;
     h = `<video src="${mediaSrc}" controls autoplay playsinline poster="${posterSrc}" style="opacity:0" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem;padding:60px 0\\'>🎮</div>'" onloadeddata="this.style.opacity='1'"></video>`;
@@ -2417,40 +2456,147 @@ function renderModalMedia() {
     return;
   }
 
-  // 触摸滑动支持
-  let touchStartX=0, touchStartY=0, isTouchDragging=false;
-  el.ontouchstart=(e)=>{touchStartX=e.touches[0].clientX;touchStartY=e.touches[0].clientY;isTouchDragging=true;};
-  el.ontouchmove=(e)=>{if(!isTouchDragging)return;const dx=e.touches[0].clientX-touchStartX;const dy=e.touches[0].clientY-touchStartY;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>10){e.preventDefault();}};
-  el.ontouchend=(e)=>{if(!isTouchDragging)return;isTouchDragging=false;const dx=e.changedTouches[0].clientX-touchStartX;const dy=e.changedTouches[0].clientY-touchStartY;if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>50){if(dx>0)navMedia(-1);else navMedia(1);}};
+  // 触摸滑动支持 - 平滑拖拽动画
+  const mediaEl = el.querySelector('img, video');
+  if (!mediaEl) return;
 
-  // 鼠标拖动支持（桌面端）
-  let mouseStartX=0, isMouseDragging=false;
+  let touchStartX=0, touchStartY=0, touchStartTime=0, isSwiping=false, currentDeltaX=0;
+  const containerWidth = el.offsetWidth;
+
+  el.ontouchstart=(e)=>{
+    touchStartX=e.touches[0].clientX;
+    touchStartY=e.touches[0].clientY;
+    touchStartTime=Date.now();
+    isSwiping=true;
+    currentDeltaX=0;
+    mediaEl.style.transition='none';
+    mediaEl.classList.add('swiping');
+  };
+
+  el.ontouchmove=(e)=>{
+    if(!isSwiping)return;
+    const dx=e.touches[0].clientX-touchStartX;
+    const dy=e.touches[0].clientY-touchStartY;
+
+    // 判断滑动方向
+    if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>5){
+      e.preventDefault();
+      currentDeltaX=dx;
+
+      // 应用阻尼效果：边缘滑动时阻力增加
+      let translateX = dx;
+      if ((currentMediaIndex===0 && dx>0) || (currentMediaIndex===currentItem.media.length-1 && dx<0)) {
+        translateX = dx * 0.3; // 边缘阻力
+      }
+
+      mediaEl.style.transform=`translateX(${translateX}px)`;
+      mediaEl.style.opacity=Math.max(0.3, 1 - Math.abs(dx) / containerWidth * 0.7);
+    }
+  };
+
+  el.ontouchend=(e)=>{
+    if(!isSwiping)return;
+    isSwiping=false;
+
+    const dx=e.changedTouches[0].clientX-touchStartX;
+    const dy=e.changedTouches[0].clientY-touchStartY;
+    const dt=Date.now()-touchStartTime;
+    const velocity=Math.abs(dx)/dt; // px/ms
+
+    mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+
+    // 判断是否切换图片：距离 > 50% 容器宽度 或 速度 > 0.8px/ms
+    const shouldSwipe = (Math.abs(dx) > containerWidth * 0.5 || velocity > 0.8) && Math.abs(dx) > Math.abs(dy);
+
+    if(shouldSwipe && Math.abs(dx) > 50){
+      // 执行切换动画
+      const targetX = dx > 0 ? containerWidth : -containerWidth;
+      mediaEl.style.transform=`translateX(${targetX}px)`;
+      mediaEl.style.opacity='0';
+
+      setTimeout(() => {
+        mediaEl.classList.remove('swiping');
+        if(dx>0) navMedia(-1);
+        else navMedia(1);
+      }, 300);
+    } else {
+      // 回弹动画
+      mediaEl.style.transform='translateX(0)';
+      mediaEl.style.opacity='1';
+      setTimeout(() => mediaEl.classList.remove('swiping'), 300);
+    }
+  };
+
+  // 鼠标拖动支持（桌面端）- 平滑拖拽动画
+  let mouseStartX=0, mouseStartTime=0, isMouseDragging=false, mouseDeltaX=0;
   el.style.cursor='grab';
+
   el.onmousedown=(e)=>{
-    if(e.button!==0)return; // 只响应左键
+    if(e.button!==0)return;
     mouseStartX=e.clientX;
+    mouseStartTime=Date.now();
     isMouseDragging=true;
+    mouseDeltaX=0;
     el.style.cursor='grabbing';
+    mediaEl.style.transition='none';
+    mediaEl.classList.add('swiping');
     e.preventDefault();
   };
+
   el.onmousemove=(e)=>{
     if(!isMouseDragging)return;
     e.preventDefault();
+    const dx=e.clientX-mouseStartX;
+    mouseDeltaX=dx;
+
+    // 应用阻尼效果
+    let translateX = dx;
+    if ((currentMediaIndex===0 && dx>0) || (currentMediaIndex===currentItem.media.length-1 && dx<0)) {
+      translateX = dx * 0.3;
+    }
+
+    mediaEl.style.transform=`translateX(${translateX}px)`;
+    mediaEl.style.opacity=Math.max(0.3, 1 - Math.abs(dx) / containerWidth * 0.7);
   };
+
   el.onmouseup=(e)=>{
     if(!isMouseDragging)return;
     isMouseDragging=false;
     el.style.cursor='grab';
+
     const dx=e.clientX-mouseStartX;
-    if(Math.abs(dx)>50){
-      if(dx>0)navMedia(-1);
-      else navMedia(1);
+    const dt=Date.now()-mouseStartTime;
+    const velocity=Math.abs(dx)/dt;
+
+    mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+
+    const shouldSwipe = (Math.abs(dx) > containerWidth * 0.5 || velocity > 0.8) && Math.abs(dx) > 50;
+
+    if(shouldSwipe){
+      const targetX = dx > 0 ? containerWidth : -containerWidth;
+      mediaEl.style.transform=`translateX(${targetX}px)`;
+      mediaEl.style.opacity='0';
+
+      setTimeout(() => {
+        mediaEl.classList.remove('swiping');
+        if(dx>0) navMedia(-1);
+        else navMedia(1);
+      }, 300);
+    } else {
+      mediaEl.style.transform='translateX(0)';
+      mediaEl.style.opacity='1';
+      setTimeout(() => mediaEl.classList.remove('swiping'), 300);
     }
   };
+
   el.onmouseleave=(e)=>{
     if(isMouseDragging){
       isMouseDragging=false;
       el.style.cursor='grab';
+      mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+      mediaEl.style.transform='translateX(0)';
+      mediaEl.style.opacity='1';
+      setTimeout(() => mediaEl.classList.remove('swiping'), 300);
     }
   };
 
@@ -2463,6 +2609,212 @@ function renderModalMedia() {
 }
 function navMedia(dir){const l=currentItem.media.length;const newIdx=currentMediaIndex+dir;if(newIdx<0||newIdx>=l)return;currentMediaIndex=newIdx;renderModalMedia();}
 function goMedia(i){currentMediaIndex=i;renderModalMedia();}
+
+// ===== FULLSCREEN IMAGE VIEWER =====
+let fullscreenIndex = 0;
+
+function openFullscreen(startIndex = 0) {
+  if (!currentItem || !currentItem.media || !currentItem.media.length) return;
+  fullscreenIndex = startIndex;
+  renderFullscreenMedia();
+  const overlay = document.getElementById('fullscreenOverlay');
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+
+  // 添加键盘导航支持
+  document.addEventListener('keydown', handleFullscreenKeyboard);
+}
+
+function handleFullscreenKeyboard(e) {
+  const overlay = document.getElementById('fullscreenOverlay');
+  if (!overlay.classList.contains('show')) return;
+
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    if (fullscreenIndex > 0) {
+      fullscreenIndex--;
+      renderFullscreenMedia();
+    }
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    if (fullscreenIndex < currentItem.media.length - 1) {
+      fullscreenIndex++;
+      renderFullscreenMedia();
+    }
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    closeFullscreen();
+  }
+}
+
+function closeFullscreen(e) {
+  if (e && e.target !== e.currentTarget) return;
+  const overlay = document.getElementById('fullscreenOverlay');
+  overlay.classList.remove('show');
+  document.body.style.overflow = 'hidden';
+
+  // 移除键盘导航监听
+  document.removeEventListener('keydown', handleFullscreenKeyboard);
+
+  // 同步当前索引到主视图
+  if (fullscreenIndex !== currentMediaIndex) {
+    currentMediaIndex = fullscreenIndex;
+    renderModalMedia();
+  }
+}
+
+function renderFullscreenMedia() {
+  const mediaEl = document.getElementById('fullscreenMedia');
+  const counterEl = document.getElementById('fullscreenCounter');
+  const m = currentItem.media;
+  const d = m[fullscreenIndex];
+  const mediaSrc = getMediaSrc(d);
+
+  let h = '';
+  if (d.type === 'image') {
+    h = `<img src="${mediaSrc}" alt="" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem\\'>🎮</div>'">`;
+  } else {
+    const posterSrc = d.thumbnail || mediaSrc;
+    h = `<video src="${mediaSrc}" controls autoplay playsinline poster="${posterSrc}" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem\\'>🎮</div>'"></video>`;
+  }
+  mediaEl.innerHTML = h;
+
+  if (m.length > 1) {
+    counterEl.textContent = `${fullscreenIndex + 1} / ${m.length}`;
+    counterEl.style.display = 'block';
+  } else {
+    counterEl.style.display = 'none';
+  }
+
+  // 添加滑动支持
+  if (m.length > 1) {
+    const imgEl = mediaEl.querySelector('img, video');
+    if (!imgEl) return;
+
+    let touchStartX = 0, touchStartY = 0, touchStartTime = 0, isSwiping = false;
+    const containerWidth = mediaEl.offsetWidth;
+
+    mediaEl.ontouchstart = (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+      isSwiping = true;
+      imgEl.style.transition = 'none';
+    };
+
+    mediaEl.ontouchmove = (e) => {
+      if (!isSwiping) return;
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 5) {
+        e.preventDefault();
+        let translateX = dx;
+        if ((fullscreenIndex === 0 && dx > 0) || (fullscreenIndex === m.length - 1 && dx < 0)) {
+          translateX = dx * 0.3;
+        }
+        imgEl.style.transform = `translateX(${translateX}px)`;
+        imgEl.style.opacity = Math.max(0.3, 1 - Math.abs(dx) / containerWidth * 0.7);
+      }
+    };
+
+    mediaEl.ontouchend = (e) => {
+      if (!isSwiping) return;
+      isSwiping = false;
+
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      const dt = Date.now() - touchStartTime;
+      const velocity = Math.abs(dx) / dt;
+
+      imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+
+      const shouldSwipe = (Math.abs(dx) > containerWidth * 0.3 || velocity > 0.5) && Math.abs(dx) > Math.abs(dy);
+
+      if (shouldSwipe && Math.abs(dx) > 30) {
+        const targetX = dx > 0 ? containerWidth : -containerWidth;
+        imgEl.style.transform = `translateX(${targetX}px)`;
+        imgEl.style.opacity = '0';
+
+        setTimeout(() => {
+          if (dx > 0 && fullscreenIndex > 0) {
+            fullscreenIndex--;
+            renderFullscreenMedia();
+          } else if (dx < 0 && fullscreenIndex < m.length - 1) {
+            fullscreenIndex++;
+            renderFullscreenMedia();
+          }
+        }, 300);
+      } else {
+        imgEl.style.transform = 'translateX(0)';
+        imgEl.style.opacity = '1';
+      }
+    };
+
+    // 鼠标拖动支持
+    let mouseStartX = 0, isMouseDragging = false;
+    mediaEl.style.cursor = 'grab';
+
+    mediaEl.onmousedown = (e) => {
+      if (e.button !== 0) return;
+      mouseStartX = e.clientX;
+      isMouseDragging = true;
+      mediaEl.style.cursor = 'grabbing';
+      imgEl.style.transition = 'none';
+      e.preventDefault();
+    };
+
+    mediaEl.onmousemove = (e) => {
+      if (!isMouseDragging) return;
+      e.preventDefault();
+      const dx = e.clientX - mouseStartX;
+      let translateX = dx;
+      if ((fullscreenIndex === 0 && dx > 0) || (fullscreenIndex === m.length - 1 && dx < 0)) {
+        translateX = dx * 0.3;
+      }
+      imgEl.style.transform = `translateX(${translateX}px)`;
+      imgEl.style.opacity = Math.max(0.3, 1 - Math.abs(dx) / containerWidth * 0.7);
+    };
+
+    mediaEl.onmouseup = (e) => {
+      if (!isMouseDragging) return;
+      isMouseDragging = false;
+      mediaEl.style.cursor = 'grab';
+
+      const dx = e.clientX - mouseStartX;
+      imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+
+      if (Math.abs(dx) > containerWidth * 0.3 && Math.abs(dx) > 30) {
+        const targetX = dx > 0 ? containerWidth : -containerWidth;
+        imgEl.style.transform = `translateX(${targetX}px)`;
+        imgEl.style.opacity = '0';
+
+        setTimeout(() => {
+          if (dx > 0 && fullscreenIndex > 0) {
+            fullscreenIndex--;
+            renderFullscreenMedia();
+          } else if (dx < 0 && fullscreenIndex < m.length - 1) {
+            fullscreenIndex++;
+            renderFullscreenMedia();
+          }
+        }, 300);
+      } else {
+        imgEl.style.transform = 'translateX(0)';
+        imgEl.style.opacity = '1';
+      }
+    };
+
+    mediaEl.onmouseleave = (e) => {
+      if (isMouseDragging) {
+        isMouseDragging = false;
+        mediaEl.style.cursor = 'grab';
+        imgEl.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+        imgEl.style.transform = 'translateX(0)';
+        imgEl.style.opacity = '1';
+      }
+    };
+  }
+}
 
 function checkScrollHint(){
   const overlay=document.getElementById('modalOverlay');
