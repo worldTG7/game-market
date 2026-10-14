@@ -31,7 +31,13 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
 /* ===== HEADER ===== */
 .header{position:sticky;top:0;z-index:100;background:rgba(15,17,23,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.header-left h1{font-family:var(--font-display);font-size:1.25rem;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,var(--accent),#ff9a5c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-left{position:relative}
+.header-left h1{font-family:var(--font-display);font-size:1.25rem;font-weight:800;letter-spacing:-.02em;background:linear-gradient(135deg,var(--accent),#ff9a5c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer}
+.category-selector{position:absolute;top:100%;left:0;margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;min-width:120px;box-shadow:0 4px 20px rgba(0,0,0,.3);display:none;z-index:101}
+.category-selector.show{display:block}
+.category-option{padding:8px 12px;border-radius:8px;font-size:.85rem;color:var(--text);cursor:pointer;transition:background .2s;white-space:nowrap}
+.category-option:hover{background:var(--surface2)}
+.category-option.active{background:var(--accent);color:#fff}
 .header-sub{font-size:.7rem;color:var(--muted);margin-top:2px}
 .header-right{display:flex;align-items:center;gap:8px}
 .user-chip{font-size:.72rem;padding:5px 12px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -382,7 +388,15 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <div id="mainApp">
   <header class="header">
     <div class="header-left">
-      <h1>世界online</h1>
+      <h1 onclick="toggleCategorySelector()">世界online ▾</h1>
+      <div class="category-selector" id="categorySelector">
+        <div class="category-option active" data-cat="全部" onclick="selectCategory('全部')">全部</div>
+        <div class="category-option" data-cat="官服" onclick="selectCategory('官服')">官服</div>
+        <div class="category-option" data-cat="H5" onclick="selectCategory('H5')">H5</div>
+        <div class="category-option" data-cat="腾讯" onclick="selectCategory('腾讯')">腾讯</div>
+        <div class="category-option" data-cat="战神" onclick="selectCategory('战神')">战神</div>
+        <div class="category-option" data-cat="小程序" onclick="selectCategory('小程序')">小程序</div>
+      </div>
       <div class="header-sub" id="headerSub"></div>
     </div>
     <div class="header-right" id="headerRight">
@@ -413,30 +427,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <div class="form-section"><label class="form-label"><span class="req">*</span> 价格</label><div style="display:flex;gap:8px"><div class="price-type-toggle"><button type="button" class="price-type-btn active" data-type="rmb" onclick="selectPriceType('rmb')"><span class="rmb-icon">¥</span></button><button type="button" class="price-type-btn gold-btn" data-type="gold" onclick="selectPriceType('gold')"><span class="gold-icon-wrapper"><img src="data:image/png;base64,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" alt="gold"></span></button></div><input type="hidden" id="fPriceType" value="rmb"><input class="form-input" id="fPrice" type="number" min="0" step="1" placeholder="输入价格"></div></div>
       <div class="form-section"><label class="form-label">微信号</label><input class="form-input" id="fWechat" placeholder="选填，方便买家联系" maxlength="50"></div>
       <div class="form-section">
-        <label class="form-label"><span class="req">*</span> 服务器</label>
-        <div class="server-selector" id="serverSelector">
-          <div class="server-option">
-            <input type="radio" name="server" id="server1" value="天启黎明">
-            <label for="server1">天启黎明</label>
-          </div>
-          <div class="server-option">
-            <input type="radio" name="server" id="server2" value="无尽星芒">
-            <label for="server2">无尽星芒</label>
-          </div>
-          <div class="server-option">
-            <input type="radio" name="server" id="server3" value="圣者苍海">
-            <label for="server3">圣者苍海</label>
-          </div>
-          <div class="server-option">
-            <input type="radio" name="server" id="server4" value="神圣花海">
-            <label for="server4">神圣花海</label>
-          </div>
-          <div class="server-option">
-            <input type="radio" name="server" id="serverCustom" value="custom">
-            <label for="serverCustom">其它</label>
-          </div>
-          <input class="server-custom-input" id="serverCustomInput" type="text" placeholder="服务器名称" maxlength="50">
-        </div>
+        <label class="form-label"><span class="req">*</span> 服务器 <span id="fServerCatHint" style="font-weight:400;color:var(--muted);margin-left:6px"></span></label>
+        <div class="server-selector" id="serverSelector"></div>
       </div>
       <div class="form-section">
         <label class="form-label">图片 / 视频</label>
@@ -592,6 +584,19 @@ let myItems = [];        // current user's items (sell view)
 let uploadedMedia = [];
 let isDataLoaded = false; // track if initial data has been loaded
 const pendingDeletes = new Set(); // track items being deleted locally until remote sync completes
+const PENDING_DELETES_KEY = 'game_market_pending_deletes';
+
+function savePendingDeletes() {
+  try { localStorage.setItem(PENDING_DELETES_KEY, JSON.stringify([...pendingDeletes])); } catch(e) {}
+}
+function loadPendingDeletes() {
+  try {
+    const saved = localStorage.getItem(PENDING_DELETES_KEY);
+    if (saved) JSON.parse(saved).forEach(id => pendingDeletes.add(id));
+  } catch(e) {}
+}
+// 页面加载时恢复待删除列表
+loadPendingDeletes();
 
 // ================================================================
 // HELPERS
@@ -1153,6 +1158,8 @@ async function loadMyItems() {
   const remoteIds = new Set(remoteItems.map(it => it.id));
   const localOnly = myItems.filter(it => !remoteIds.has(it.id)).map(it => ({...it, _owner: it._owner || branch}));
   myItems = [...remoteItems, ...localOnly];
+  // Filter out items in pendingDeletes (deletion in progress)
+  myItems = myItems.filter(it => !pendingDeletes.has(it.id));
   myItems.sort((a,b)=>(b.time||'').localeCompare(a.time||''));
   renderMyItems();
   renderMinePanel();
@@ -1557,6 +1564,7 @@ let everyonePage = 0;
 const PAGE_SIZE = 20;
 let isViewingUserPage = false;
 let userPageReturnContext = null; // 记录用户页返回上下文
+let userPageCurrentUsername = ''; // 当前查看的用户页用户名
 
 // ================================================================
 // SEARCH & FILTER
@@ -1568,12 +1576,82 @@ let mineServerFilter = '';
 let userPageSearchTerm = '';
 let userPageServerFilter = '';
 
-const SERVER_FILTERS = ['天启黎明', '无尽星芒', '圣者苍海', '神圣花海', '其它'];
+// ===== 游戏版本（大类目） =====
+let currentCategory = '全部';
+
+function toggleCategorySelector() {
+  const sel = document.getElementById('categorySelector');
+  if (sel) sel.classList.toggle('show');
+}
+
+function selectCategory(cat) {
+  currentCategory = cat;
+  // 更新 active 样式
+  document.querySelectorAll('.category-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.cat === cat);
+  });
+  // 关闭选择器
+  const sel = document.getElementById('categorySelector');
+  if (sel) sel.classList.remove('show');
+  // 重置所有服务器筛选（类目切换后服务器列表变了）
+  everyoneServerFilter = '';
+  mineServerFilter = '';
+  userPageServerFilter = '';
+  // 更新发布表单的服务器选项
+  renderFormServerSelector();
+  // 重新渲染所有面板
+  renderEveryonePanel();
+  renderMinePanel();
+  // 如果用户页打开，也重新渲染（保留当前查看的用户）
+  if (isViewingUserPage && userPageCurrentUsername) {
+    viewUserPage(userPageCurrentUsername, false);
+  }
+}
+
+// 点击外部关闭类目选择器
+document.addEventListener('click', function(e) {
+  const sel = document.getElementById('categorySelector');
+  const h1 = document.querySelector('.header-left h1');
+  if (sel && sel.classList.contains('show') && !sel.contains(e.target) && e.target !== h1) {
+    sel.classList.remove('show');
+  }
+});
+
+const CATEGORY_SERVERS = {
+  '全部': ['天启黎明','无尽星芒','圣者苍海','神圣花海','岁月永恒','时光无极','赤海神域','圣盾神剑','王者传说','浩气震古','炎火时光','金羊星辰','盖世战神','永耀刃渊','其它'],
+  '官服': ['天启黎明','无尽星芒','圣者苍海','神圣花海','其它'],
+  'H5':   ['岁月永恒','时光无极','赤海神域','圣盾神剑','其它'],
+  '腾讯': ['王者传说','浩气震古','炎火时光','金羊星辰','其它'],
+  '战神': ['盖世战神','其它'],
+  '小程序': ['永耀刃渊','其它']
+};
+
+// 类目 → 其下的固定服务器（不含"其它"），用于给新道具自动打上 category
+const CATEGORY_FIXED_SERVERS = {
+  '官服': ['天启黎明','无尽星芒','圣者苍海','神圣花海'],
+  'H5':   ['岁月永恒','时光无极','赤海神域','圣盾神剑'],
+  '腾讯': ['王者传说','浩气震古','炎火时光','金羊星辰'],
+  '战神': ['盖世战神'],
+  '小程序': ['永耀刃渊']
+};
+
+// 根据服务器名反推 category
+function serverToCategory(server) {
+  for (const cat in CATEGORY_FIXED_SERVERS) {
+    if (CATEGORY_FIXED_SERVERS[cat].includes(server)) return cat;
+  }
+  return ''; // 自定义服务器归入空类目，只在"全部"中显示
+}
+
+function getCurrentServerFilters() {
+  return CATEGORY_SERVERS[currentCategory] || CATEGORY_SERVERS['全部'];
+}
 
 function serverFilterHTML(id) {
+  const filters = getCurrentServerFilters();
   let h = `<div class="server-filter" id="${id}">`;
   h += `<button class="server-filter-btn active" data-server="" onclick="setServerFilter('${id}', '')">全部</button>`;
-  SERVER_FILTERS.forEach(s => {
+  filters.forEach(s => {
     h += `<button class="server-filter-btn" data-server="${s}" onclick="setServerFilter('${id}', '${s}')">${s}</button>`;
   });
   h += '</div>';
@@ -1608,12 +1686,26 @@ function setServerFilter(filterId, server) {
 function filterBySearchAndServer(items, term, serverFilter) {
   let filtered = items;
 
+  // Apply category filter (data isolation between categories)
+  if (currentCategory !== '全部') {
+    const catServers = CATEGORY_FIXED_SERVERS[currentCategory] || [];
+    // 只保留属于当前类目的道具：
+    // - 有明确 category 字段且匹配
+    // - 或无 category 字段但 server 属于该类目
+    filtered = filtered.filter(it => {
+      if (it.category) return it.category === currentCategory;
+      return it.server && catServers.includes(it.server);
+    });
+  }
+
   // Apply server filter
   if (serverFilter) {
     if (serverFilter === '其它') {
-      // "其它" means not one of the 4 preset servers
-      const presetServers = ['天启黎明', '无尽星芒', '圣者苍海', '神圣花海'];
-      filtered = filtered.filter(it => !it.server || !presetServers.includes(it.server));
+      // "其它" means servers not in the fixed list for current category
+      const fixedServers = (currentCategory !== '全部')
+        ? (CATEGORY_FIXED_SERVERS[currentCategory] || [])
+        : Object.values(CATEGORY_FIXED_SERVERS).flat();
+      filtered = filtered.filter(it => !it.server || !fixedServers.includes(it.server));
     } else {
       filtered = filtered.filter(it => it.server === serverFilter);
     }
@@ -1761,7 +1853,7 @@ function renderEveryonePanel() {
 
 function loadMoreItems() {
   everyonePage++;
-  const display = allItems.filter(it => !it._deleted);
+  const display = filterBySearchAndServer(allItems.filter(it => !it._deleted), everyoneSearchTerm, everyoneServerFilter);
   const start = everyonePage * PAGE_SIZE;
   const end = start + PAGE_SIZE;
   const pageItems = display.slice(start, end);
@@ -1914,6 +2006,7 @@ function deleteMyItem(itemId) {
   // 立即标记删除 + 更新UI
   item._deleted = true;
   pendingDeletes.add(itemId); // 加入待删除集合，防止刷新时重新出现
+  savePendingDeletes(); // 持久化到 localStorage
   showToast('✅ 删除成功，预计1-3分钟后完全生效','success');
   renderMinePanel();
 
@@ -1926,16 +2019,22 @@ function deleteMyItem(itemId) {
       if (!(await validateSession())) {
         // 验证失败，移除待删除标记
         pendingDeletes.delete(itemId);
+        savePendingDeletes();
         return;
       }
-      await saveItem(item);
+      // 真正删除远端文件和媒体
+      await deleteItemData(item);
+      // 更新主索引
+      await updateMainIndex();
       await loadAllItems();
       // 远端删除成功后，从待删除集合移除
       pendingDeletes.delete(itemId);
+      savePendingDeletes();
     } catch(e) {
       showToast('删除同步失败: '+e.message+'，请刷新后重试','error');
       // 远端删除失败，从待删除集合移除，让道具重新出现
       pendingDeletes.delete(itemId);
+      savePendingDeletes();
       // 重新加载数据，让道具重新显示
       await loadAllItems();
     }
@@ -1957,9 +2056,13 @@ function viewUserPage(username, fromModal = false) {
   // 设置标志，防止后台渲染覆盖用户页
   isViewingUserPage = true;
 
-  // 重置用户页搜索/筛选状态（每次访问新用户时清空）
-  userPageSearchTerm = '';
-  userPageServerFilter = '';
+  // 如果切换了用户（不是同类目刷新），重置搜索/筛选状态
+  const isRefresh = (userPageCurrentUsername === username && isViewingUserPage);
+  userPageCurrentUsername = username;
+  if (!isRefresh) {
+    userPageSearchTerm = '';
+    userPageServerFilter = '';
+  }
 
   const overlay = document.getElementById('userPageOverlay');
   const header = document.getElementById('userPageHeader');
@@ -2438,28 +2541,74 @@ function contactSeller(){
 }
 
 // ================================================================
-// SERVER SELECTOR
+// SERVER SELECTOR (dynamic based on currentCategory)
 // ================================================================
-const serverCustomInput = document.getElementById('serverCustomInput');
-document.querySelectorAll('input[name="server"]').forEach(radio => {
-  radio.addEventListener('change', function() {
-    if (this.value === 'custom') {
-      serverCustomInput.classList.add('show');
-      serverCustomInput.focus();
-    } else {
-      serverCustomInput.classList.remove('show');
-    }
+function renderFormServerSelector() {
+  const container = document.getElementById('serverSelector');
+  const hintEl = document.getElementById('fServerCatHint');
+  if (!container) return;
+
+  const servers = CATEGORY_FIXED_SERVERS[currentCategory] || [];
+  let h = '';
+
+  if (currentCategory === '全部') {
+    // "全部"类目下不允许发布（或提供所有服务器）— 这里提供所有固定服务器 + 其它
+    const allServers = Object.values(CATEGORY_FIXED_SERVERS).flat();
+    allServers.forEach((s, i) => {
+      h += `<div class="server-option">
+        <input type="radio" name="server" id="server${i}" value="${s}">
+        <label for="server${i}">${s}</label>
+      </div>`;
+    });
+    if (hintEl) hintEl.textContent = '点击导航栏《世界online》切换游戏版本';
+  } else {
+    servers.forEach((s, i) => {
+      h += `<div class="server-option">
+        <input type="radio" name="server" id="server${i}" value="${s}">
+        <label for="server${i}">${s}</label>
+      </div>`;
+    });
+    if (hintEl) hintEl.textContent = currentCategory;
+  }
+
+  h += `<div class="server-option">
+    <input type="radio" name="server" id="serverCustom" value="custom">
+    <label for="serverCustom">其它</label>
+  </div>
+  <input class="server-custom-input" id="serverCustomInput" type="text" placeholder="服务器名称" maxlength="50">`;
+
+  container.innerHTML = h;
+
+  // Rebind custom input toggle
+  const customInput = document.getElementById('serverCustomInput');
+  container.querySelectorAll('input[name="server"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      if (this.value === 'custom') {
+        customInput.classList.add('show');
+        customInput.focus();
+      } else {
+        customInput.classList.remove('show');
+      }
+    });
   });
-});
+
+  // Default select first option
+  const firstRadio = container.querySelector('input[name="server"]');
+  if (firstRadio) firstRadio.checked = true;
+}
 
 function getSelectedServer() {
   const selected = document.querySelector('input[name="server"]:checked');
   if (!selected) return null;
   if (selected.value === 'custom') {
-    return serverCustomInput.value.trim();
+    const ci = document.getElementById('serverCustomInput');
+    return ci ? ci.value.trim() : '';
   }
   return selected.value;
 }
+
+// Initial render
+renderFormServerSelector();
 
 // ================================================================
 // FILE UPLOAD
@@ -2631,6 +2780,14 @@ async function doPublish(title, price, server) {
   // Create item with media references (not base64 data)
   const wechat = document.getElementById('fWechat').value.trim() || '无';
   const priceType = document.getElementById('fPriceType').value || 'rmb';
+
+  // 自动设置 category：如果当前类目不是"全部"，则使用当前类目；否则根据服务器推断
+  let itemCategory = currentCategory;
+  if (itemCategory === '全部') {
+    // 在"全部"类目下发布时，根据服务器名推断所属类目
+    itemCategory = serverToCategory(server) || '';
+  }
+
   const item = {
     id: itemId,
     title,
@@ -2638,7 +2795,7 @@ async function doPublish(title, price, server) {
     priceType,
     wechat,
     server,
-    category:'',
+    category: itemCategory,
     game:'',
     desc:title,
     media: mediaRefs,
@@ -3042,11 +3199,8 @@ function resetForm(){
   document.getElementById('fTitle').value='';
   document.getElementById('fPrice').value='';
   document.getElementById('fWechat').value='';
-  // Reset server selector to default
-  document.getElementById('server1').checked = true;
-  const serverCustomInput = document.getElementById('serverCustomInput');
-  serverCustomInput.value = '';
-  serverCustomInput.classList.remove('show');
+  // Re-render server selector for current category and select first
+  renderFormServerSelector();
   uploadedMedia=[];
   renderUploadPreviews();
 }
