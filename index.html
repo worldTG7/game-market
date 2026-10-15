@@ -73,7 +73,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card{background:var(--surface);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:transform .15s,border-color .2s}
 .card:active{transform:scale(.97)}
 .card:hover{border-color:var(--accent)}
-.card-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--surface2);display:block}
+.card-thumb{width:100%;aspect-ratio:4/3;object-fit:contain;background:var(--surface2);display:block}
 .card-thumb-placeholder{width:100%;aspect-ratio:4/3;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:2rem}
 .card-body{padding:10px 12px 12px}
 .card-title{font-size:.95rem;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:8px}
@@ -629,6 +629,17 @@ function toBranchName(username) {
   return username.replace(/[^a-zA-Z0-9_]/g, c => '_' + c.charCodeAt(0).toString(16) + '_').toLowerCase();
 }
 
+function fromBranchName(branchName) {
+  return branchName.replace(/_([0-9a-f]+)_/g, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
+}
+
+function validateUsername(username) {
+  // 1-3 Chinese characters OR 1-5 English letters/digits
+  const chinesePattern = /^[\u4e00-\u9fa5]{1,3}$/;
+  const englishPattern = /^[a-zA-Z0-9]{1,5}$/;
+  return chinesePattern.test(username) || englishPattern.test(username);
+}
+
 function showToast(msg, type) {
   const t=document.getElementById('toast');
   t.textContent=msg; t.className='toast show '+(type||'');
@@ -893,8 +904,7 @@ async function doRegister() {
   const btn = document.getElementById('regBtn');
   msg.className='auth-msg'; msg.textContent='';
 
-  if (!username||username.length<3||username.length>20) { msg.className='auth-msg error'; msg.textContent='用户名需3-20位'; return; }
-  if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) { msg.className='auth-msg error'; msg.textContent='用户名仅支持字母数字下划线中文'; return; }
+  if (!validateUsername(username)) { msg.className='auth-msg error'; msg.textContent='用户名需1-3个中文或1-5个字母数字'; return; }
   if (pass.length<4) { msg.className='auth-msg error'; msg.textContent='密码至少4位'; return; }
   if (pass!==pass2) { msg.className='auth-msg error'; msg.textContent='两次密码不一致'; return; }
 
@@ -1473,7 +1483,7 @@ async function loadAllItems(options = {}) {
     console.error('Background refresh failed:', e);
     // Keep showing cached data if available
     if (!cachedItems || cachedItems.length === 0) {
-      allItems = currentUser ? myItems.map(i=>({...i,_owner:currentUser.username})) : [];
+      allItems = currentUser ? myItems.map(i=>({...i,_owner:toBranchName(currentUser.username)})) : [];
       isDataLoaded = true;
       renderEveryonePanel();
       renderMinePanel();
@@ -1641,12 +1651,11 @@ function bindSearchMine() {
               <div class="card-title">${esc(it.title)}</div>
               <div class="card-price ${it.priceType || 'rmb'}"><span class="price-num">${it.price}</span></div>
               <div class="card-tags">
-                ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
                 ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
               </div>
-              ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
+              ${(it.category||it.server)?`<div class="card-server-row">🌐 ${it.category?esc(it.category):''}${it.server?(it.category?'-':'')+esc(it.server):''}</div>`:''}
               <div class="card-meta-row">
-                ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
+                ${it._owner?`<span class="card-meta-owner">${esc(fromBranchName(it._owner))}</span>`:''}
                 ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
               </div>
             </div>
@@ -1966,12 +1975,11 @@ function renderCardGrid(items, gridId, opts = {}) {
         <div class="card-title">${esc(it.title)}</div>
         <div class="card-price ${it.priceType || 'rmb'}"><span class="price-num">${it.price}</span></div>
         <div class="card-tags">
-          ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
         </div>
-        ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
+        ${(it.category||it.server)?`<div class="card-server-row">🌐 ${it.category?esc(it.category):''}${it.server?(it.category?'-':'')+esc(it.server):''}</div>`:''}
         <div class="card-meta-row">
-          ${it._owner && !opts.hideOwner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
+          ${it._owner && !opts.hideOwner?`<span class="card-meta-owner">${esc(fromBranchName(it._owner))}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
       </div>
@@ -2085,12 +2093,11 @@ async function loadMoreItems() {
         <div class="card-title">${esc(it.title)}</div>
         <div class="card-price ${it.priceType || 'rmb'}"><span class="price-num">${it.price}</span></div>
         <div class="card-tags">
-          ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
           ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
         </div>
-        ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
+        ${(it.category||it.server)?`<div class="card-server-row">🌐 ${it.category?esc(it.category):''}${it.server?(it.category?'-':'')+esc(it.server):''}</div>`:''}
         <div class="card-meta-row">
-          ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
+          ${it._owner?`<span class="card-meta-owner">${esc(fromBranchName(it._owner))}</span>`:''}
           ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
         </div>
       </div>
@@ -2181,12 +2188,11 @@ function renderMinePanel() {
           <div class="card-title">${esc(it.title)}</div>
           <div class="card-price ${it.priceType || 'rmb'}"><span class="price-num">${it.price}</span></div>
           <div class="card-tags">
-            ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
             ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
           </div>
-          ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
+          ${(it.category||it.server)?`<div class="card-server-row">🌐 ${it.category?esc(it.category):''}${it.server?(it.category?'-':'')+esc(it.server):''}</div>`:''}
           <div class="card-meta-row">
-            ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
+            ${it._owner?`<span class="card-meta-owner">${esc(fromBranchName(it._owner))}</span>`:''}
             ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
           </div>
         </div>
@@ -2277,17 +2283,18 @@ function viewUserPage(username, fromModal = false) {
 
   // 确保传入的是分支名格式
   const branchName = toBranchName(username);
+  const displayName = fromBranchName(branchName);
   const userItems = allItems.filter(it => it._owner === branchName && !it._deleted);
-  const avatar = username ? username.charAt(0).toUpperCase() : '?';
+  const avatar = displayName ? displayName.charAt(0).toUpperCase() : '?';
 
   header.innerHTML = `
     <div class="user-info">
       <div class="user-avatar">${esc(avatar)}</div>
-      <div class="user-name">${esc(username)}</div>
+      <div class="user-name">${esc(displayName)}</div>
       <div class="user-count">${userItems.length} 个道具</div>
     </div>
     <div class="actions">
-      <button class="share-header-btn" onclick="event.stopPropagation();shareUserPage('${escJs(username)}')"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享主页</button>
+      <button class="share-header-btn" onclick="event.stopPropagation();shareUserPage('${escJs(displayName)}')"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>分享主页</button>
       <button class="user-page-close" onclick="closeUserPage()">✕</button>
     </div>`;
 
@@ -2320,12 +2327,11 @@ function viewUserPage(username, fromModal = false) {
           <div class="card-title">${esc(it.title)}</div>
           <div class="card-price ${it.priceType || 'rmb'}"><span class="price-num">${it.price}</span></div>
           <div class="card-tags">
-            ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
             ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
           </div>
-          ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
+          ${(it.category||it.server)?`<div class="card-server-row">🌐 ${it.category?esc(it.category):''}${it.server?(it.category?'-':'')+esc(it.server):''}</div>`:''}
           <div class="card-meta-row">
-            ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
+            ${it._owner?`<span class="card-meta-owner">${esc(fromBranchName(it._owner))}</span>`:''}
             ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
           </div>
         </div>
@@ -2362,12 +2368,11 @@ function viewUserPage(username, fromModal = false) {
               <div class="card-title">${esc(it.title)}</div>
               <div class="card-price ${it.priceType || 'rmb'}"><span class="price-num">${it.price}</span></div>
               <div class="card-tags">
-                ${it.category?`<span class="tag heat">${esc(it.category)}</span>`:''}
                 ${it.game?`<span class="tag">${esc(it.game)}</span>`:''}
               </div>
-              ${it.server?`<div class="card-server-row">🌐 ${esc(it.server)}</div>`:''}
+              ${(it.category||it.server)?`<div class="card-server-row">🌐 ${it.category?esc(it.category):''}${it.server?(it.category?'-':'')+esc(it.server):''}</div>`:''}
               <div class="card-meta-row">
-                ${it._owner?`<span class="card-meta-owner">${esc(it._owner)}</span>`:''}
+                ${it._owner?`<span class="card-meta-owner">${esc(fromBranchName(it._owner))}</span>`:''}
                 ${it.time?`<span class="card-meta-time">${formatTime(it.time)}</span>`:''}
               </div>
             </div>
@@ -2491,12 +2496,13 @@ function openDetailById(id, fromUserPage = false) {
   const userBar = document.getElementById('modalUserBar');
   const closeBtn = '<button class="modal-close" onclick="closeModal()">✕</button>';
   if (currentItem._owner || currentItem.time) {
-    const avatar = currentItem._owner ? currentItem._owner.charAt(0).toUpperCase() : '?';
+    const displayName = currentItem._owner ? fromBranchName(currentItem._owner) : '';
+    const avatar = displayName ? displayName.charAt(0).toUpperCase() : '?';
     const canClickUser = !fromUserPage; // 仅首页进入时可点击用户名
     if (canClickUser) {
       userBar.innerHTML = `
         <div class="user-info" onclick="viewUserPage('${escJs(currentItem._owner)}', true)">
-          ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
+          ${displayName ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(displayName)}</div>` : ''}
         </div>
         <div class="actions">${closeBtn}</div>
       `;
@@ -2504,7 +2510,7 @@ function openDetailById(id, fromUserPage = false) {
       // 不可点击时：添加 static 类，去掉光标样式和 active 反馈，显示为普通信息
       userBar.innerHTML = `
         <div class="user-info static">
-          ${currentItem._owner ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(currentItem._owner)}</div>` : ''}
+          ${displayName ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(displayName)}</div>` : ''}
         </div>
         <div class="actions">${closeBtn}</div>
       `;
@@ -3075,7 +3081,7 @@ function closeModal(e){
   }
 }
 function contactSeller(){
-  if(currentItem._owner) showToast('卖家: '+currentItem._owner+'，请在群内联系','success');
+  if(currentItem._owner) showToast('卖家: '+fromBranchName(currentItem._owner)+'，请在群内联系','success');
   else showToast('请通过群聊联系发布者','success');
 }
 
@@ -3173,10 +3179,30 @@ function handleFileList(files){
   const progressText = document.getElementById('uploadProgressText');
   const progressFill = document.getElementById('uploadProgressFill');
 
+  // Check 30 image limit
+  if(uploadedMedia.length + files.length > 30){
+    showToast('最多只能上传30张图片','error');
+    return;
+  }
+
+  // Pre-allocate array to preserve order
+  const results = new Array(files.length);
+  let completed = 0;
+
   Array.from(files).forEach((file, idx)=>{
-    if(file.size>50*1024*1024){showToast(file.name+' 超过50MB','error');return;}
+    if(file.size>50*1024*1024){
+      showToast(file.name+' 超过50MB','error');
+      results[idx] = null;
+      completed++;
+      return;
+    }
     const isVideo=file.type.startsWith('video/');
-    if(isVideo){showToast('暂不支持视频上传','error');return;}
+    if(isVideo){
+      showToast('暂不支持视频上传','error');
+      results[idx] = null;
+      completed++;
+      return;
+    }
 
     // Show loading progress while reading file
     progressEl.classList.add('show');
@@ -3196,24 +3222,35 @@ function handleFileList(files){
       clearInterval(progressTimer);
       progressFill.style.width = '100%';
 
-      uploadedMedia.push({
+      // Store at original index to preserve order
+      results[idx] = {
         type:isVideo?'video':'image',
         file:file,
         preview:e.target.result,
         name:file.name
-      });
-      renderUploadPreviews();
+      };
+      completed++;
 
-      // Hide progress after short delay
-      setTimeout(() => {
-        if (idx === files.length - 1) {
-          progressEl.classList.remove('show');
-        }
-      }, 400);
+      // When all files are done, add them in order
+      if(completed === files.length){
+        results.forEach(r => {
+          if(r) uploadedMedia.push(r);
+        });
+        renderUploadPreviews();
+        setTimeout(() => progressEl.classList.remove('show'), 400);
+      }
     };
     reader.onerror = function() {
       clearInterval(progressTimer);
-      progressEl.classList.remove('show');
+      results[idx] = null;
+      completed++;
+      if(completed === files.length){
+        results.forEach(r => {
+          if(r) uploadedMedia.push(r);
+        });
+        renderUploadPreviews();
+        setTimeout(() => progressEl.classList.remove('show'), 400);
+      }
       showToast('文件读取失败: ' + file.name, 'error');
     };
     reader.readAsDataURL(file);
@@ -3920,7 +3957,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px}
 .card{background:var(--surface);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:transform .15s,border-color .2s}
 .card:active{transform:scale(.97)}.card:hover{border-color:var(--accent)}
-.card-thumb{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--surface2);display:block}
+.card-thumb{width:100%;aspect-ratio:4/3;object-fit:contain;background:var(--surface2);display:block}
 .card-thumb-placeholder{width:100%;aspect-ratio:4/3;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:2rem}
 .card-body{padding:10px 12px 12px}
 .card-title{font-size:.85rem;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px}
@@ -3964,8 +4001,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 </div>
 <script>
 var items=${JSON.stringify(items)};var mi2=0,ci=null;
-function render(){var g=document.getElementById('grid'),h='';items.forEach(function(it,i){var th=it.media&&it.media.length?(it.media[0].type==='image'?'<img class="card-thumb" src="'+it.media[0].data+'" loading="lazy">':'<video class="card-thumb" src="'+it.media[0].data+'" muted preload="metadata"></video>'):'<div class="card-thumb-placeholder">🎮</div>';h+='<div class="card" onclick="op('+i+')">'+th+'<div class="card-body"><div class="card-title">'+e2(it.title)+'</div><div class="card-price '+(it.priceType||'rmb')+'"><span class="price-num">'+it.price+'</span></div><div class="card-tags"><span class="tag heat">'+e2(it.category)+'</span>'+(it.game?'<span class="tag">'+e2(it.game)+'</span>':'')+'</div><div class="card-meta-row">'+(it._owner?'<span class="card-meta-owner">'+e2(it._owner)+'</span>':'')+(it.time?'<span class="card-meta-time">'+it.time+'</span>':'')+'</div></div></div>';});g.innerHTML=h;}
-function op(i){ci=items[i];mi2=0;rm();document.getElementById('mi').innerHTML='<div class="modal-title">'+e2(ci.title)+'</div><div class="modal-price '+(ci.priceType||'rmb')+'">'+ci.price+'</div><div class="modal-desc">'+e2(ci.desc)+'</div><div class="modal-meta"><span class="meta-chip">'+e2(ci.category)+'</span>'+(ci.game?'<span class="meta-chip">🎮 '+e2(ci.game)+'</span>':'')+(ci.time?'<span class="meta-chip">📅 '+ci.time+'</span>':'')+(ci._owner?'<span class="meta-chip">👤 '+e2(ci._owner)+'</span>':'')+(ci.tags||[]).map(function(t){return'<span class="meta-chip">'+e2(t)+'</span>';}).join('')+'</div>';document.getElementById('ov').classList.add('show');document.body.style.overflow='hidden';}
+function fromBranchName(branchName){return branchName.replace(/_([0-9a-f]+)_/g,function(match,hex){return String.fromCharCode(parseInt(hex,16));});}
+function render(){var g=document.getElementById('grid'),h='';items.forEach(function(it,i){var th=it.media&&it.media.length?(it.media[0].type==='image'?'<img class="card-thumb" src="'+it.media[0].data+'" loading="lazy">':'<video class="card-thumb" src="'+it.media[0].data+'" muted preload="metadata"></video>'):'<div class="card-thumb-placeholder">🎮</div>';h+='<div class="card" onclick="op('+i+')">'+th+'<div class="card-body"><div class="card-title">'+e2(it.title)+'</div><div class="card-price '+(it.priceType||'rmb')+'"><span class="price-num">'+it.price+'</span></div><div class="card-tags"><span class="tag heat">'+e2(it.category)+'</span>'+(it.game?'<span class="tag">'+e2(it.game)+'</span>':'')+'</div><div class="card-meta-row">'+(it._owner?'<span class="card-meta-owner">'+e2(fromBranchName(it._owner))+'</span>':'')+(it.time?'<span class="card-meta-time">'+it.time+'</span>':'')+'</div></div></div>';});g.innerHTML=h;}
+function op(i){ci=items[i];mi2=0;rm();document.getElementById('mi').innerHTML='<div class="modal-title">'+e2(ci.title)+'</div><div class="modal-price '+(ci.priceType||'rmb')+'">'+ci.price+'</div><div class="modal-desc">'+e2(ci.desc)+'</div><div class="modal-meta"><span class="meta-chip">'+e2(ci.category)+'</span>'+(ci.game?'<span class="meta-chip">🎮 '+e2(ci.game)+'</span>':'')+(ci.time?'<span class="meta-chip">📅 '+ci.time+'</span>':'')+(ci._owner?'<span class="meta-chip">👤 '+e2(fromBranchName(ci._owner))+'</span>':'')+(ci.tags||[]).map(function(t){return'<span class="meta-chip">'+e2(t)+'</span>';}).join('')+'</div>';document.getElementById('ov').classList.add('show');document.body.style.overflow='hidden';}
 function rm(){var el=document.getElementById('mm'),m=ci.media;if(!m||!m.length){el.innerHTML='<div style="color:#6b7084;font-size:3rem">🎮</div>';return;}var d=m[mi2],h=d.type==='image'?'<img src="'+d.data+'">':'<video src="'+d.data+'" controls playsinline></video>';if(m.length>1){h+='<button class="media-arrow left" onclick="nv(-1)">‹</button><button class="media-arrow right" onclick="nv(1)">›</button><div class="media-nav">';m.forEach(function(_,i){h+='<button class="media-dot'+(i===mi2?' active':'')+'" onclick="go('+i+')"></button>';});h+='</div>';}el.innerHTML=h;}
 function nv(d){var l=ci.media.length;mi2=(mi2+d+l)%l;rm();}
 function go(i){mi2=i;rm();}
