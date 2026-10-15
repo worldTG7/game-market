@@ -2889,7 +2889,7 @@ function handleFullscreenKeyboard(e) {
   }
 }
 
-function closeFullscreen(e) {
+function closeFullscreen(e, fromPopstate = false) {
   if (e && e.target !== e.currentTarget) return;
   const overlay = document.getElementById('fullscreenOverlay');
   overlay.classList.remove('show');
@@ -2898,12 +2898,14 @@ function closeFullscreen(e) {
   // 移除键盘导航监听
   document.removeEventListener('keydown', handleFullscreenKeyboard);
 
-  // Pop from layer stack and trigger history back for back button support
-  const idx = layerStack.lastIndexOf('fullscreen');
-  if (idx !== -1) {
-    layerStack.splice(idx, 1);
-    _skipNextPopstate = true;
-    history.back();
+  // Only manage history if not called from popstate (browser already went back)
+  if (!fromPopstate) {
+    const idx = layerStack.lastIndexOf('fullscreen');
+    if (idx !== -1) {
+      layerStack.splice(idx, 1);
+      _skipNextPopstate = true;
+      history.back();
+    }
   }
 
   // 同步当前索引到主视图
@@ -3115,6 +3117,11 @@ window.addEventListener('popstate', function(e) {
 
   // 关闭最顶层的覆盖层（浏览器返回键/手势触发）
   const top = layerStack.length ? layerStack[layerStack.length - 1] : null;
+  if (top === 'fullscreen' && document.getElementById('fullscreenOverlay').classList.contains('show')) {
+    layerStack.pop();
+    closeFullscreen(null, true); // fromPopstate = true to skip history.back()
+    return;
+  }
   if (top === 'modal' && document.getElementById('modalOverlay').classList.contains('show')) {
     layerStack.pop();
     // 退出前同步点赞数
