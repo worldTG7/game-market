@@ -1782,7 +1782,7 @@ function lazyLoadImages() {
 // EVERYONE PANEL (with pagination & infinite scroll)
 // ================================================================
 let everyonePage = 0;
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 25;
 let isViewingUserPage = false;
 
 // ===== 懒加载状态 =====
@@ -2177,21 +2177,57 @@ function setupInfiniteScroll() {
   const trigger = document.getElementById('loadMoreTrigger');
   if (!trigger) return;
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const hasMore = loadMoreItems();
-        if (!hasMore) {
-          observer.disconnect();
+  // 预加载触发器：当滚动到倒数第5个道具时开始加载
+  let isLoading = false;
+  let hasMoreData = true;
+
+  const checkAndLoad = () => {
+    if (isLoading || !hasMoreData) return;
+
+    // 计算当前可视区域底部位置
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const windowHeight = window.innerHeight;
+    const scrollBottom = scrollTop + windowHeight;
+
+    // 获取所有道具卡片
+    const cards = document.querySelectorAll('.card');
+    if (cards.length < 5) return;
+
+    // 检查倒数第5个道具是否在可视区域内
+    const targetCard = cards[Math.max(0, cards.length - 5)];
+    if (!targetCard) return;
+
+    const cardRect = targetCard.getBoundingClientRect();
+    const cardTop = scrollTop + cardRect.top;
+
+    // 如果倒数第5个道具已经进入可视区域，开始加载
+    if (cardTop < scrollBottom + 200) { // 提前200px触发
+      isLoading = true;
+      const promise = loadMoreItems();
+      if (promise && promise.then) {
+        promise.then((result) => {
+          hasMoreData = result;
+          isLoading = false;
+          if (!result) {
+            // 没有更多数据，移除监听器
+            window.removeEventListener('scroll', checkAndLoad, { passive: true });
+          }
+        });
+      } else {
+        hasMoreData = promise;
+        isLoading = false;
+        if (!promise) {
+          window.removeEventListener('scroll', checkAndLoad, { passive: true });
         }
       }
-    });
-  }, {
-    rootMargin: '200px 0px',
-    threshold: 0.01
-  });
+    }
+  };
 
-  observer.observe(trigger);
+  // 监听滚动事件
+  window.addEventListener('scroll', checkAndLoad, { passive: true });
+
+  // 初始检查：如果道具数量不足，立即触发加载
+  checkAndLoad();
 }
 
 // ================================================================
