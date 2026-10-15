@@ -1589,6 +1589,11 @@ function switchTab(tab) {
   document.getElementById('headerSub').textContent = '免费分享，请勿上传隐私信息';
   updateHeader(); // 更新分享按钮显示状态
 
+  // Push history state for non-everyone tabs to enable back button navigation
+  if (tab === 'mine' || tab === 'upload') {
+    history.pushState({tab: tab}, '');
+  }
+
   if (tab === 'everyone') {
     // 如果正在查看用户页面，先关闭
     if (isViewingUserPage) {
@@ -1610,6 +1615,47 @@ function switchTab(tab) {
     loadMyItems();
   }
   if (tab === 'upload') { updateUploadPanel(); }
+}
+
+function bindSwipeBackToEveryone() {
+  const panelMine = document.getElementById('panelMine');
+  const panelUpload = document.getElementById('panelUpload');
+
+  [panelMine, panelUpload].forEach(panel => {
+    let touchStartX = 0, touchStartY = 0, isSwiping = false;
+
+    panel.addEventListener('touchstart', (e) => {
+      // 只响应从屏幕左边缘开始的滑动（前25px内）— 模拟 iOS/Android 返回手势
+      if (e.touches[0].clientX > 25) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      isSwiping = true;
+    }, { passive: true });
+
+    panel.addEventListener('touchmove', (e) => {
+      if (!isSwiping) return;
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = Math.abs(e.touches[0].clientY - touchStartY);
+
+      // 水平向右滑动大于垂直滑动，且超过30px时拦截滚动
+      if (dx > 30 && dx > dy * 1.5) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    panel.addEventListener('touchend', (e) => {
+      if (!isSwiping) return;
+      isSwiping = false;
+
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+
+      // 向右滑动超过80px，且水平明显大于垂直 → 视为"返回"手势
+      if (dx > 80 && dx > dy * 1.5) {
+        switchTab('everyone');
+      }
+    }, { passive: true });
+  });
 }
 
 function bindSearchEveryone() {
@@ -2493,7 +2539,6 @@ function openDetailById(id, fromUserPage = false) {
   currentItem = allItems.find(it => it.id === id) || myItems.find(it => it.id === id);
   if (!currentItem) { showToast('道具不存在','error'); return; }
   currentMediaIndex = 0;
-  renderModalMedia();
 
   // 动态计算 z-index：找到当前最高层级，再加 10
   const userPageVisible = document.getElementById('userPageOverlay').classList.contains('show');
@@ -2559,6 +2604,7 @@ function openDetailById(id, fromUserPage = false) {
   // 使用动态计算的 z-index
   modalOverlay.style.zIndex = newZ;
   modalOverlay.classList.add('show');
+  renderModalMedia();
   document.body.style.overflow='hidden';
   history.pushState({modal:true}, '');
   layerStack.push('modal');
@@ -3086,6 +3132,13 @@ window.addEventListener('popstate', function(e) {
     return;
   }
   if (userZ > 0) { closeUserPage(true); return; }
+
+  // 处理 tab 导航：从"我的"或"上传"回退到"看大家"
+  const currentTab = document.querySelector('.tab-btn.active')?.dataset?.tab;
+  if (currentTab === 'mine' || currentTab === 'upload') {
+    switchTab('everyone');
+    return;
+  }
 });
 
 function closeModal(e){
