@@ -421,7 +421,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <div class="header-sub" id="headerSub"></div>
     </div>
     <div class="header-right" id="headerRight">
-      <button class="header-share-btn" id="headerShareBtn" style="display:none" onclick="shareMainPage()">分享主页</button>
+      <button class="header-share-btn" id="headerShareBtn" style="display:none" onclick="shareMainPage()">分享</button>
       <button class="auth-btn" id="authBtnHeader" onclick="openLogin()">登录 / 注册</button>
     </div>
   </header>
@@ -1047,7 +1047,7 @@ function updateHeader() {
   const refreshBtn = showRefresh ? `<button class="refresh-btn" id="refreshBtn" onclick="refreshAll()" title="刷新"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>` : '';
 
   if (currentUser) {
-    r.innerHTML = `${refreshBtn}${showShare ? '<button class="header-share-btn" onclick="shareMainPage()">分享主页</button>' : ''}<span class="user-chip">👤 ${esc(currentUser.username)}</span><button class="logout-btn" onclick="doLogout()">退出</button>`;
+    r.innerHTML = `${refreshBtn}${showShare ? '<button class="header-share-btn" onclick="shareMainPage()">分享</button>' : ''}<span class="user-chip">👤 ${esc(currentUser.username)}</span><button class="logout-btn" onclick="doLogout()">退出</button>`;
   } else {
     r.innerHTML = `${refreshBtn}<button class="auth-btn" onclick="openLogin()">登录 / 注册</button>`;
   }
@@ -2859,6 +2859,10 @@ function openFullscreen(startIndex = 0) {
   overlay.classList.add('show');
   document.body.style.overflow = 'hidden';
 
+  // Push to layer stack and history for back button support
+  layerStack.push('fullscreen');
+  history.pushState({fullscreen: true}, '');
+
   // 添加键盘导航支持
   document.addEventListener('keydown', handleFullscreenKeyboard);
 }
@@ -2893,6 +2897,14 @@ function closeFullscreen(e) {
 
   // 移除键盘导航监听
   document.removeEventListener('keydown', handleFullscreenKeyboard);
+
+  // Pop from layer stack and trigger history back for back button support
+  const idx = layerStack.lastIndexOf('fullscreen');
+  if (idx !== -1) {
+    layerStack.splice(idx, 1);
+    _skipNextPopstate = true;
+    history.back();
+  }
 
   // 同步当前索引到主视图
   if (fullscreenIndex !== currentMediaIndex) {
