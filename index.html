@@ -210,6 +210,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .detail-header .user-info.static:active{background:none}
 .detail-header .user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#ff8f5c);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:.9rem;flex-shrink:0;box-shadow:0 2px 8px rgba(255,107,53,.3)}
 .detail-header .user-name{font-size:.95rem;font-weight:600;color:var(--text)}
+.detail-header .user-hint{font-size:.75rem;color:#6b7280;font-weight:500;margin-left:6px;display:flex;align-items:center;gap:4px;animation:pulse-hint 2s ease-in-out infinite;white-space:nowrap;cursor:default}
+.detail-header .user-hint::before{content:'👈';display:inline-block;font-size:1.1rem}
+@keyframes pulse-hint{0%,100%{opacity:.55;transform:translateX(0)}50%{opacity:1;transform:translateX(-2px)}}
 .detail-header .user-count{font-size:.78rem;color:var(--text2);margin-top:2px}
 .detail-header .post-time{font-size:.75rem;color:var(--text2);margin-left:10px}
 .detail-header .actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
@@ -230,6 +233,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .media-dot:hover{background:rgba(255,255,255,.7)}
 .media-dot.active{background:#fff;transform:scale(1.3);box-shadow:0 0 8px rgba(255,255,255,.6)}
 .media-counter{position:absolute;top:12px;left:12px;font-size:.72rem;color:rgba(255,255,255,.8);background:rgba(0,0,0,.5);padding:3px 10px;border-radius:12px;z-index:5;font-variant-numeric:tabular-nums}
+.ios-carousel{position:relative;width:100%;height:100%;overflow:hidden;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.carousel-track{display:flex;height:100%;will-change:transform}
+.carousel-slide{flex-shrink:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.carousel-slide img,.carousel-slide video{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none;pointer-events:auto}
 .modal-info{padding:16px;flex:0 0 auto;overflow-y:auto;max-height:40vh}
 .modal-title{font-size:1.25rem;font-weight:700;line-height:1.4;margin-bottom:8px}
 .modal-price{font-family:var(--font-display);font-size:1.2rem;font-weight:400;color:#8b92a8;margin-bottom:8px}
@@ -240,8 +247,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .modal-detail-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 .modal-detail-item{font-size:.82rem;color:var(--text2);line-height:1.5}
 .modal-desc{font-size:.82rem;line-height:1.6;color:var(--text2);white-space:pre-wrap;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.modal-meta{display:flex;flex-wrap:wrap;gap:6px;padding-top:12px;border-top:1px solid var(--border)}
+.modal-meta{display:flex;flex-wrap:wrap;gap:6px;padding-top:12px;border-top:1px solid var(--border);align-items:center}
 .meta-chip{font-size:.68rem;padding:4px 10px;border-radius:20px;background:var(--surface);color:var(--text2);border:1px solid var(--border)}
+.owner-hint{font-size:.62rem;color:#a0a8c0;margin-left:4px;animation:bounce-left 1.5s ease-in-out infinite;white-space:nowrap}
+@keyframes bounce-left{0%,100%{transform:translateX(0)}50%{transform:translateX(-3px)}}
 .modal-actions{display:flex;gap:10px;padding:10px 16px env(safe-area-inset-bottom,16px);background:var(--bg);border-top:1px solid var(--border);flex-shrink:0}
 @media(min-width:520px){.modal{max-width:100%;height:100dvh;border-radius:0;touch-action:auto}.modal-handle{display:none}.modal-desc{-webkit-line-clamp:unset}}
 
@@ -412,7 +421,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <div class="header-sub" id="headerSub"></div>
     </div>
     <div class="header-right" id="headerRight">
-      <button class="header-share-btn" id="headerShareBtn" style="display:none" onclick="shareMainPage()">分享</button>
+      <button class="header-share-btn" id="headerShareBtn" style="display:none" onclick="shareMainPage()">分享主页</button>
       <button class="auth-btn" id="authBtnHeader" onclick="openLogin()">登录 / 注册</button>
     </div>
   </header>
@@ -1038,7 +1047,7 @@ function updateHeader() {
   const refreshBtn = showRefresh ? `<button class="refresh-btn" id="refreshBtn" onclick="refreshAll()" title="刷新"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>` : '';
 
   if (currentUser) {
-    r.innerHTML = `${refreshBtn}${showShare ? '<button class="header-share-btn" onclick="shareMainPage()">分享</button>' : ''}<span class="user-chip">👤 ${esc(currentUser.username)}</span><button class="logout-btn" onclick="doLogout()">退出</button>`;
+    r.innerHTML = `${refreshBtn}${showShare ? '<button class="header-share-btn" onclick="shareMainPage()">分享主页</button>' : ''}<span class="user-chip">👤 ${esc(currentUser.username)}</span><button class="logout-btn" onclick="doLogout()">退出</button>`;
   } else {
     r.innerHTML = `${refreshBtn}<button class="auth-btn" onclick="openLogin()">登录 / 注册</button>`;
   }
@@ -2501,8 +2510,11 @@ function openDetailById(id, fromUserPage = false) {
     const canClickUser = !fromUserPage; // 仅首页进入时可点击用户名
     if (canClickUser) {
       userBar.innerHTML = `
-        <div class="user-info" onclick="viewUserPage('${escJs(currentItem._owner)}', true)">
-          ${displayName ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(displayName)}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+          <div class="user-info" onclick="viewUserPage('${escJs(currentItem._owner)}', true)">
+            ${displayName ? `<div class="user-avatar">${esc(avatar)}</div><div class="user-name">${esc(displayName)}</div>` : ''}
+          </div>
+          ${displayName ? '<span class="user-hint">点我</span>' : ''}
         </div>
         <div class="actions">${closeBtn}</div>
       `;
@@ -2538,6 +2550,7 @@ function openDetailById(id, fromUserPage = false) {
     <div class="modal-meta">
       ${currentItem.category?`<span class="meta-chip">${esc(currentItem.category)}</span>`:''}
       ${currentItem.game?`<span class="meta-chip">🎮 ${esc(currentItem.game)}</span>`:''}
+      ${currentItem._owner?`<span class="meta-chip">👤 ${esc(fromBranchName(currentItem._owner))}</span>`:''}
       ${(currentItem.tags||[]).map(t=>`<span class="meta-chip">${esc(t)}</span>`).join('')}
     </div>`;
   // Add share button for all users (logged-in owner gets deploy option, others get link copy)
@@ -2588,183 +2601,194 @@ function formatTime(t) {
 function renderModalMedia() {
   const el=document.getElementById('modalMedia'), m=currentItem.media;
   if(!m||!m.length){el.innerHTML='<div style="color:var(--muted);font-size:3rem;padding:60px 0">🎮</div>';return;}
-  const d=m[currentMediaIndex];
-  const mediaSrc = getMediaSrc(d);
 
-  let h='';
-  if(d.type==='image'){
-    h = `<img src="${mediaSrc}" alt="" style="opacity:0;cursor:zoom-in" onclick="openFullscreen(${currentMediaIndex})" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem;padding:60px 0\\'>🎮</div>'" onload="this.style.opacity='1'">`;
-  } else {
-    const posterSrc = d.thumbnail || mediaSrc;
-    h = `<video src="${mediaSrc}" controls autoplay playsinline poster="${posterSrc}" style="opacity:0" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem;padding:60px 0\\'>🎮</div>'" onloadeddata="this.style.opacity='1'"></video>`;
+  // 单图模式
+  if(m.length===1){
+    const d=m[0];
+    const mediaSrc = getMediaSrc(d);
+    let h='';
+    if(d.type==='image'){
+      h = `<img src="${mediaSrc}" alt="" style="opacity:0;cursor:zoom-in" onclick="openFullscreen(0)" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem;padding:60px 0\\'>🎮</div>'" onload="this.style.opacity='1'">`;
+    } else {
+      const posterSrc = d.thumbnail || mediaSrc;
+      h = `<video src="${mediaSrc}" controls autoplay playsinline poster="${posterSrc}" style="opacity:0" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem;padding:60px 0\\'>🎮</div>'" onloadeddata="this.style.opacity='1'"></video>`;
+    }
+    el.innerHTML=h;
+    el.ontouchstart=el.ontouchmove=el.ontouchend=null;
+    el.onmousedown=el.onmousemove=el.onmouseup=el.onmouseleave=null;
+    checkScrollHint();
+    return;
   }
 
-  if(m.length>1){
-    h+=`<div class="media-counter">${currentMediaIndex+1} / ${m.length}</div>`;
-    h+='<button class="media-arrow left" onclick="navMedia(-1)"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>';
-    h+='<button class="media-arrow right" onclick="navMedia(1)"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>';
-    h+='<div class="media-nav">';
-    m.forEach((_,i)=>{h+=`<button class="media-dot ${i===currentMediaIndex?'active':''}" onclick="goMedia(${i})"></button>`;});
-    h+='</div>';
-  }
+  // 多图模式 - iOS相册风格轮播
+  const containerWidth = el.offsetWidth;
+  const trackWidth = containerWidth * m.length;
+
+  // 创建轮播容器
+  let h = `<div class="media-carousel" style="position:relative;width:100%;height:100%;overflow:hidden;touch-action:pan-y">`;
+  h += `<div class="carousel-track" style="display:flex;width:${trackWidth}px;height:100%;transition:transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);transform:translateX(-${currentMediaIndex * containerWidth}px)">`;
+
+  // 渲染所有图片
+  m.forEach((d, i) => {
+    const mediaSrc = getMediaSrc(d);
+    h += `<div class="carousel-slide" style="width:${containerWidth}px;height:100%;flex-shrink:0;display:flex;align-items:center;justify-content:center">`;
+    if(d.type==='image'){
+      h += `<img src="${mediaSrc}" alt="" style="max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in" onclick="openFullscreen(${i})" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem\\'>🎮</div>'">`;
+    } else {
+      const posterSrc = d.thumbnail || mediaSrc;
+      h += `<video src="${mediaSrc}" controls playsinline poster="${posterSrc}" style="max-width:100%;max-height:100%;object-fit:contain" onerror="this.outerHTML='<div style=\\'color:var(--muted);font-size:3rem\\'>🎮</div>'"></video>`;
+    }
+    h += `</div>`;
+  });
+
+  h += `</div>`; // carousel-track
+  h += `<div class="media-counter">${currentMediaIndex+1} / ${m.length}</div>`;
+  h += `<div class="media-nav" style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5">`;
+  m.forEach((_,i)=>{h+=`<button class="media-dot ${i===currentMediaIndex?'active':''}" onclick="goMedia(${i})"></button>`;});
+  h += `</div></div>`; // media-nav, media-carousel
+
   el.innerHTML=h;
 
   // 检查是否需要显示滚动提示
   checkScrollHint();
 
-  // 单图时禁用滑动，多图时添加触摸滑动和鼠标拖动支持
-  if(m.length<=1){
-    el.ontouchstart=el.ontouchmove=el.ontouchend=null;
-    el.onmousedown=el.onmousemove=el.onmouseup=el.onmouseleave=null;
-    return;
-  }
+  // 初始化触摸滑动
+  const carousel = el.querySelector('.media-carousel');
+  const track = el.querySelector('.carousel-track');
+  if (!carousel || !track) return;
 
-  // 触摸滑动支持 - 平滑拖拽动画
-  const mediaEl = el.querySelector('img, video');
-  if (!mediaEl) return;
+  let touchStartX=0, touchStartY=0, touchStartTime=0, currentX=0, isDragging=false;
+  const baseOffset = -currentMediaIndex * containerWidth;
 
-  let touchStartX=0, touchStartY=0, touchStartTime=0, isSwiping=false;
-  const containerWidth = el.offsetWidth;
-
-  el.ontouchstart=(e)=>{
+  carousel.ontouchstart=(e)=>{
     touchStartX=e.touches[0].clientX;
     touchStartY=e.touches[0].clientY;
     touchStartTime=Date.now();
-    isSwiping=true;
-    mediaEl.style.transition='none';
+    currentX=0;
+    isDragging=true;
+    track.style.transition='none';
   };
 
-  el.ontouchmove=(e)=>{
-    if(!isSwiping)return;
+  carousel.ontouchmove=(e)=>{
+    if(!isDragging)return;
     const dx=e.touches[0].clientX-touchStartX;
     const dy=e.touches[0].clientY-touchStartY;
 
     // 判断滑动方向
-    if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>5){
+    if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>3){
       e.preventDefault();
+      currentX=dx;
 
-      // 应用阻尼效果：边缘滑动时阻力增加
-      let translateX = dx;
-      if ((currentMediaIndex===0 && dx>0) || (currentMediaIndex===currentItem.media.length-1 && dx<0)) {
-        translateX = dx * 0.3; // 边缘阻力
+      // 边缘阻尼效果
+      let translateX = baseOffset + dx;
+      if ((currentMediaIndex===0 && dx>0) || (currentMediaIndex===m.length-1 && dx<0)) {
+        translateX = baseOffset + dx * 0.3;
       }
 
-      mediaEl.style.transform=`translateX(${translateX}px)`;
+      track.style.transform=`translateX(${translateX}px)`;
     }
   };
 
-  el.ontouchend=(e)=>{
-    if(!isSwiping)return;
-    isSwiping=false;
+  carousel.ontouchend=(e)=>{
+    if(!isDragging)return;
+    isDragging=false;
 
     const dx=e.changedTouches[0].clientX-touchStartX;
     const dy=e.changedTouches[0].clientY-touchStartY;
     const dt=Date.now()-touchStartTime;
-    const velocity=Math.abs(dx)/dt; // px/ms
+    const velocity=Math.abs(dx)/dt;
 
-    // 判断是否切换图片：距离 > 50% 容器宽度 或 速度 > 0.8px/ms
-    const shouldSwipe = (Math.abs(dx) > containerWidth * 0.5 || velocity > 0.8) && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50;
+    // 低阈值判断：距离>30%宽度 或 速度>0.4px/ms
+    const shouldSwipe = (Math.abs(dx) > containerWidth * 0.3 || velocity > 0.4) && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30;
+
+    track.style.transition='transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
 
     if(shouldSwipe){
-      // 执行滑动切换动画（平滑过渡，不闪黑屏）
-      const targetIndex = dx > 0 ? currentMediaIndex - 1 : currentMediaIndex + 1;
+      const targetIndex = dx > 0 ? Math.max(0, currentMediaIndex - 1) : Math.min(m.length - 1, currentMediaIndex + 1);
 
-      if (targetIndex >= 0 && targetIndex < currentItem.media.length) {
-        // 可以切换 - 执行平滑滑动动画
-        mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-        const targetX = dx > 0 ? containerWidth : -containerWidth;
-        mediaEl.style.transform=`translateX(${targetX}px)`;
+      if (targetIndex !== currentMediaIndex) {
+        const targetX = -targetIndex * containerWidth;
+        track.style.transform=`translateX(${targetX}px)`;
 
         setTimeout(() => {
-          // 更新到目标图片
           currentMediaIndex = targetIndex;
           renderModalMedia();
-        }, 300);
+        }, 400);
       } else {
-        // 已到边界 - 回弹动画
-        mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-        mediaEl.style.transform='translateX(0)';
+        track.style.transform=`translateX(${baseOffset}px)`;
       }
     } else {
-      // 未达到切换阈值 - 回弹动画
-      mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      mediaEl.style.transform='translateX(0)';
+      track.style.transform=`translateX(${baseOffset}px)`;
     }
   };
 
-  // 鼠标拖动支持（桌面端）- 平滑拖拽动画
+  // 鼠标拖动支持
   let mouseStartX=0, mouseStartTime=0, isMouseDragging=false;
-  el.style.cursor='grab';
+  carousel.style.cursor='grab';
 
-  el.onmousedown=(e)=>{
+  carousel.onmousedown=(e)=>{
     if(e.button!==0)return;
     mouseStartX=e.clientX;
     mouseStartTime=Date.now();
     isMouseDragging=true;
-    el.style.cursor='grabbing';
-    mediaEl.style.transition='none';
+    carousel.style.cursor='grabbing';
+    track.style.transition='none';
     e.preventDefault();
   };
 
-  el.onmousemove=(e)=>{
+  carousel.onmousemove=(e)=>{
     if(!isMouseDragging)return;
     e.preventDefault();
     const dx=e.clientX-mouseStartX;
 
-    // 应用阻尼效果
-    let translateX = dx;
-    if ((currentMediaIndex===0 && dx>0) || (currentMediaIndex===currentItem.media.length-1 && dx<0)) {
-      translateX = dx * 0.3;
+    // 边缘阻尼效果
+    let translateX = baseOffset + dx;
+    if ((currentMediaIndex===0 && dx>0) || (currentMediaIndex===m.length-1 && dx<0)) {
+      translateX = baseOffset + dx * 0.3;
     }
 
-    mediaEl.style.transform=`translateX(${translateX}px)`;
+    track.style.transform=`translateX(${translateX}px)`;
   };
 
-  el.onmouseup=(e)=>{
+  carousel.onmouseup=(e)=>{
     if(!isMouseDragging)return;
     isMouseDragging=false;
-    el.style.cursor='grab';
+    carousel.style.cursor='grab';
 
     const dx=e.clientX-mouseStartX;
     const dt=Date.now()-mouseStartTime;
     const velocity=Math.abs(dx)/dt;
 
-    // 判断是否切换图片：距离 > 50% 容器宽度 或 速度 > 0.8px/ms
-    const shouldSwipe = (Math.abs(dx) > containerWidth * 0.5 || velocity > 0.8) && Math.abs(dx) > 50;
+    // 低阈值判断
+    const shouldSwipe = (Math.abs(dx) > containerWidth * 0.3 || velocity > 0.4) && Math.abs(dx) > 30;
+
+    track.style.transition='transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
 
     if(shouldSwipe){
-      // 执行滑动切换动画（平滑过渡，不闪黑屏）
-      const targetIndex = dx > 0 ? currentMediaIndex - 1 : currentMediaIndex + 1;
+      const targetIndex = dx > 0 ? Math.max(0, currentMediaIndex - 1) : Math.min(m.length - 1, currentMediaIndex + 1);
 
-      if (targetIndex >= 0 && targetIndex < currentItem.media.length) {
-        // 可以切换 - 执行平滑滑动动画
-        mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-        const targetX = dx > 0 ? containerWidth : -containerWidth;
-        mediaEl.style.transform=`translateX(${targetX}px)`;
+      if (targetIndex !== currentMediaIndex) {
+        const targetX = -targetIndex * containerWidth;
+        track.style.transform=`translateX(${targetX}px)`;
 
         setTimeout(() => {
-          // 更新到目标图片
           currentMediaIndex = targetIndex;
           renderModalMedia();
-        }, 300);
+        }, 400);
       } else {
-        // 已到边界 - 回弹动画
-        mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-        mediaEl.style.transform='translateX(0)';
+        track.style.transform=`translateX(${baseOffset}px)`;
       }
     } else {
-      // 未达到切换阈值 - 回弹动画
-      mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      mediaEl.style.transform='translateX(0)';
+      track.style.transform=`translateX(${baseOffset}px)`;
     }
   };
 
-  el.onmouseleave=(e)=>{
+  carousel.onmouseleave=(e)=>{
     if(isMouseDragging){
       isMouseDragging=false;
-      el.style.cursor='grab';
-      mediaEl.style.transition='transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      mediaEl.style.transform='translateX(0)';
+      carousel.style.cursor='grab';
+      track.style.transition='transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      track.style.transform=`translateX(${baseOffset}px)`;
     }
   };
 
@@ -4003,7 +4027,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 var items=${JSON.stringify(items)};var mi2=0,ci=null;
 function fromBranchName(branchName){return branchName.replace(/_([0-9a-f]+)_/g,function(match,hex){return String.fromCharCode(parseInt(hex,16));});}
 function render(){var g=document.getElementById('grid'),h='';items.forEach(function(it,i){var th=it.media&&it.media.length?(it.media[0].type==='image'?'<img class="card-thumb" src="'+it.media[0].data+'" loading="lazy">':'<video class="card-thumb" src="'+it.media[0].data+'" muted preload="metadata"></video>'):'<div class="card-thumb-placeholder">🎮</div>';h+='<div class="card" onclick="op('+i+')">'+th+'<div class="card-body"><div class="card-title">'+e2(it.title)+'</div><div class="card-price '+(it.priceType||'rmb')+'"><span class="price-num">'+it.price+'</span></div><div class="card-tags"><span class="tag heat">'+e2(it.category)+'</span>'+(it.game?'<span class="tag">'+e2(it.game)+'</span>':'')+'</div><div class="card-meta-row">'+(it._owner?'<span class="card-meta-owner">'+e2(fromBranchName(it._owner))+'</span>':'')+(it.time?'<span class="card-meta-time">'+it.time+'</span>':'')+'</div></div></div>';});g.innerHTML=h;}
-function op(i){ci=items[i];mi2=0;rm();document.getElementById('mi').innerHTML='<div class="modal-title">'+e2(ci.title)+'</div><div class="modal-price '+(ci.priceType||'rmb')+'">'+ci.price+'</div><div class="modal-desc">'+e2(ci.desc)+'</div><div class="modal-meta"><span class="meta-chip">'+e2(ci.category)+'</span>'+(ci.game?'<span class="meta-chip">🎮 '+e2(ci.game)+'</span>':'')+(ci.time?'<span class="meta-chip">📅 '+ci.time+'</span>':'')+(ci._owner?'<span class="meta-chip">👤 '+e2(fromBranchName(ci._owner))+'</span>':'')+(ci.tags||[]).map(function(t){return'<span class="meta-chip">'+e2(t)+'</span>';}).join('')+'</div>';document.getElementById('ov').classList.add('show');document.body.style.overflow='hidden';}
+function op(i){ci=items[i];mi2=0;rm();document.getElementById('mi').innerHTML='<div class="modal-title">'+e2(ci.title)+'</div><div class="modal-price '+(ci.priceType||'rmb')+'">'+ci.price+'</div><div class="modal-desc">'+e2(ci.desc)+'</div><div class="modal-meta"><span class="meta-chip">'+e2(ci.category)+'</span>'+(ci.game?'<span class="meta-chip">🎮 '+e2(ci.game)+'</span>':'')+(ci.time?'<span class="meta-chip">📅 '+ci.time+'</span>':'')+(ci._owner?'<span class="meta-chip">👤 '+e2(fromBranchName(ci._owner))+'</span><span class="owner-hint">← 点击头像查看主页</span>':'')+(ci.tags||[]).map(function(t){return'<span class="meta-chip">'+e2(t)+'</span>';}).join('')+'</div>';document.getElementById('ov').classList.add('show');document.body.style.overflow='hidden';}
 function rm(){var el=document.getElementById('mm'),m=ci.media;if(!m||!m.length){el.innerHTML='<div style="color:#6b7084;font-size:3rem">🎮</div>';return;}var d=m[mi2],h=d.type==='image'?'<img src="'+d.data+'">':'<video src="'+d.data+'" controls playsinline></video>';if(m.length>1){h+='<button class="media-arrow left" onclick="nv(-1)">‹</button><button class="media-arrow right" onclick="nv(1)">›</button><div class="media-nav">';m.forEach(function(_,i){h+='<button class="media-dot'+(i===mi2?' active':'')+'" onclick="go('+i+')"></button>';});h+='</div>';}el.innerHTML=h;}
 function nv(d){var l=ci.media.length;mi2=(mi2+d+l)%l;rm();}
 function go(i){mi2=i;rm();}
