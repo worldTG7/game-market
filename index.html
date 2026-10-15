@@ -1674,7 +1674,7 @@ function bindSearchEveryone() {
     if (container) {
       container.innerHTML = renderCardGrid(filtered.slice(0, PAGE_SIZE), 'everyoneGrid');
     }
-  });
+  }, { needLoadAll: true });
 }
 
 function bindSearchMine() {
@@ -1971,21 +1971,24 @@ function searchBoxHTML(id, placeholder, filterId) {
   <div class="search-box">
     <div class="search-input-wrap">
       <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="${id}" placeholder="${placeholder}" autocomplete="off">
+      <input type="search" id="${id}" placeholder="${placeholder}" autocomplete="off" enterkeyhint="search">
       <button class="search-clear" id="${id}Clear" onclick="clearSearch('${id}')">✕</button>
     </div>
     <div class="search-result-count" id="${id}Count" style="display:none"></div>
   </div>`;
 }
 
-function onSearchInput(inputId, filterId, getItems, renderCards) {
+function onSearchInput(inputId, filterId, getItems, renderCards, options = {}) {
   const input = document.getElementById(inputId);
   const clearBtn = document.getElementById(inputId + 'Clear');
   const countEl = document.getElementById(inputId + 'Count');
   if (!input) return;
 
-  input.addEventListener('input', function() {
-    const term = this.value.trim();
+  // needLoadAll: 是否搜索时需要先加载所有未加载的数据（仅"看大家"需要）
+  const needLoadAll = options.needLoadAll || false;
+
+  const performSearch = async () => {
+    const term = input.value.trim();
     clearBtn.classList.toggle('show', term.length > 0);
 
     // Get current server filter
@@ -1993,6 +1996,25 @@ function onSearchInput(inputId, filterId, getItems, renderCards) {
     if (filterId === 'everyoneServerFilter') serverFilter = everyoneServerFilter;
     else if (filterId === 'mineServerFilter') serverFilter = mineServerFilter;
     else if (filterId === 'userPageServerFilter') serverFilter = userPageServerFilter;
+
+    // 仅"看大家"场景：有搜索词且有未加载数据时，先加载全部
+    if (needLoadAll && term && !lazyLoadComplete && pendingFileList.length > 0) {
+      countEl.style.display = 'block';
+      countEl.textContent = '正在搜索...';
+      renderCards([]);
+
+      while (!lazyLoadComplete && pendingFileList.length > 0) {
+        const newBatch = await loadNextBatch(50);
+        if (newBatch.length > 0) {
+          const existingIds = new Set(allItems.map(it => it.id));
+          newBatch.forEach(it => {
+            if (!existingIds.has(it.id)) {
+              allItems.push(it);
+            }
+          });
+        }
+      }
+    }
 
     const filtered = filterBySearchAndServer(getItems(), term, serverFilter);
     const hasFilter = term || serverFilter;
@@ -2004,6 +2026,28 @@ function onSearchInput(inputId, filterId, getItems, renderCards) {
       countEl.style.display = 'none';
     }
     renderCards(filtered);
+  };
+
+  // 监听回车键（包括手机键盘的"搜索/确认"按钮）
+  input.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      performSearch();
+    }
+  });
+
+  // 移动端输入法确认（change 事件）
+  input.addEventListener('change', function() {
+    performSearch();
+  });
+
+  // 区服筛选按钮点击时立即搜索
+  clearBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    input.value = '';
+    clearBtn.classList.remove('show');
+    countEl.style.display = 'none';
+    performSearch();
   });
 }
 
